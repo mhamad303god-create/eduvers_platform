@@ -1,0 +1,228 @@
+{% extends 'layouts/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}الإشعارات - EduVerse{% endblock %}
+
+{% block extra_head %}
+<style>
+.notif-shell { display:grid; gap:16px; }
+.notif-actions { display:flex; justify-content:flex-end; }
+.notif-order-note { color:#94a3b8; font-size:.92rem; }
+.notif-list { display:grid; gap:16px; }
+.notif-card { padding:22px; border-radius:26px; border:1px solid rgba(148,163,184,.14); background:linear-gradient(180deg, rgba(15,23,42,.92), rgba(17,24,39,.96)); box-shadow:0 24px 48px rgba(2,6,23,.24); }
+.notif-card.unread { border-color:rgba(56,189,248,.22); box-shadow:0 24px 48px rgba(56,189,248,.08); }
+.notif-top { display:flex; justify-content:space-between; gap:16px; align-items:flex-start; margin-bottom:12px; }
+.notif-title { margin:0 0 8px; font-size:1.16rem; }
+.notif-time { color:#94a3b8; white-space:nowrap; }
+.notif-type { display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:999px; background:rgba(14,165,233,.12); color:#dbeafe; border:1px solid rgba(14,165,233,.18); font-size:.82rem; font-weight:800; }
+.notif-content { color:#dbe7f5; line-height:1.95; }
+.notif-data { margin-top:14px; padding:16px; border-radius:18px; background:rgba(59,130,246,.08); border:1px solid rgba(59,130,246,.14); display:grid; gap:8px; }
+.notif-actions-row { margin-top:16px; display:flex; gap:10px; flex-wrap:wrap; }
+.empty-state { padding:36px 24px; border-radius:24px; background:linear-gradient(180deg, rgba(15,23,42,.86), rgba(17,24,39,.96)); text-align:center; color:#94a3b8; }
+.is-processing { opacity:.62; pointer-events:none; }
+@media (max-width: 720px) { .notif-top { display:grid; } .notif-time { white-space:normal; } }
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<section class="dashboard-section">
+    <div class="section-header">
+        <div class="section-title"><i class="fas fa-bell"></i> الإشعارات</div>
+    </div>
+
+    <div class="notif-shell">
+        <div class="notif-actions">
+            <a href="{% url 'notifications:mark_all_read' %}" class="btn-dash btn-primary-dash" id="markAllNotificationsReadButton" data-notification-count="{{ notifications|length }}">
+                <i class="fas fa-check"></i> تحديد الكل كمقروء
+            </a>
+        </div>
+        <div class="notif-order-note">يتم عرض غير المقروء أولاً، ثم الأحدث فالأقدم.</div>
+        {% if notifications|length == 0 and message_notifications_count > 0 %}
+            <div class="notif-order-note" style="margin-top: 6px; color: #cbd5e1;">
+                لا توجد إشعارات عامة حالياً. توجد {{ message_notifications_count }} إشعارات رسائل تظهر في <a href="{% url 'notifications:message_list' %}" style="color: #60a5fa;">صفحة الرسائل</a>.
+            </div>
+        {% endif %}
+
+        {% if notifications %}
+        <div class="notif-list" id="notificationList">
+            {% for notification in notifications %}
+            <article
+                class="notif-card {% if not notification.is_read %}unread{% endif %}"
+                data-notification-card
+                data-notification-id="{{ notification.notification_id }}"
+                {% if notification.type == 'call' and notification.data.call_id %}data-call-id="{{ notification.data.call_id }}"{% endif %}
+            >
+                <div class="notif-top">
+                    <div>
+                        <h3 class="notif-title">{{ notification.title }}</h3>
+                        <div class="notif-type">{{ notification.get_type_display }}</div>
+                    </div>
+                    <div class="notif-time">{{ notification.created_at|date:"Y-m-d H:i" }}</div>
+                </div>
+                <div class="notif-content">{{ notification.content }}</div>
+
+                {% if notification.data.sender_name or notification.data.subject or notification.data.message %}
+                <div class="notif-data">
+                    {% if notification.data.sender_name %}
+                    <div><strong>المرسل:</strong> {{ notification.data.sender_name }}{% if notification.data.sender_email %} ({{ notification.data.sender_email }}){% endif %}</div>
+                    {% endif %}
+                    {% if notification.data.subject %}
+                    <div><strong>الموضوع:</strong> {{ notification.data.subject }}</div>
+                    {% endif %}
+                    {% if notification.data.message %}
+                    <div><strong>المحتوى:</strong> {{ notification.data.message }}</div>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <div class="notif-actions-row">
+                    {% if notification.type == 'message' %}
+                    <a href="{% if notification.data.message_id and not notification.is_read %}{% url 'notifications:message_detail' notification.data.message_id %}{% else %}{% url 'notifications:message_list' %}?filter=unread{% endif %}" class="btn-dash btn-primary-dash">
+                        <i class="fas fa-envelope-open-text"></i> فتح الرسالة الجديدة
+                    </a>
+                    {% endif %}
+
+                    {% if notification.type == 'call' and notification.data.call_id %}
+                    {% if notification.data.status == 'pending' or notification.data.status == 'active' %}
+                    <a href="{% url 'notifications:live_call_room' notification.data.call_id %}" class="btn-dash btn-primary-dash">
+                        <i class="fas fa-video"></i> فتح الاتصال
+                    </a>
+                    {% endif %}
+                    {% if notification.data.direction == 'incoming' and notification.data.status == 'pending' %}
+                    <form method="post" action="{% url 'notifications:respond_live_call' notification.data.call_id 'accept' %}" data-live-call-form data-live-call-action="accept">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-dash btn-primary-dash">قبول</button>
+                    </form>
+                    <form method="post" action="{% url 'notifications:respond_live_call' notification.data.call_id 'reject' %}" data-live-call-form data-live-call-action="reject">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-dash btn-outline-dash">رفض</button>
+                    </form>
+                    {% endif %}
+                    {% endif %}
+
+                    {% if not notification.is_read %}
+                    <a href="{% url 'notifications:mark_notification_read' notification.notification_id %}" class="btn-dash btn-outline-dash">
+                        <i class="fas fa-check"></i> تحديد كمقروء
+                    </a>
+                    {% endif %}
+
+                    <form method="post" action="{% url 'notifications:delete_notification' notification.notification_id %}" data-delete-notification-form>
+                        {% csrf_token %}
+                        <button type="submit" class="btn-dash btn-outline-dash" style="color:#fecaca; border-color:rgba(248,113,113,.24);">
+                            <i class="fas fa-trash"></i> حذف
+                        </button>
+                    </form>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+        {% endif %}
+        <div class="empty-state" id="notificationsEmptyState" {% if notifications %}hidden{% endif %}>
+            {% if message_notifications_count and not notifications %}
+                لا توجد إشعارات عامة حالياً. توجد {{ message_notifications_count }} إشعارات رسائل في <a href="{% url 'notifications:message_list' %}" style="color:#60a5fa;">صفحة الرسائل</a>.
+            {% else %}
+                لا توجد إشعارات حالياً.
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const list = document.getElementById('notificationList');
+    const emptyState = document.getElementById('notificationsEmptyState');
+
+    function ensureEmptyState() {
+        if (!list) return;
+        const visibleCards = list.querySelectorAll('[data-notification-card]');
+        emptyState.hidden = visibleCards.length !== 0;
+    }
+
+    async function submitAjaxForm(form, onSuccess) {
+        const card = form.closest('[data-notification-card]');
+        const formData = new FormData(form);
+        if (card) card.classList.add('is-processing');
+        try {
+            const response = await fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                },
+                body: formData
+            });
+            const contentType = response.headers.get('content-type') || '';
+            let payload;
+            if (contentType.includes('application/json')) {
+                payload = await response.json();
+            } else {
+                const responseText = await response.text();
+                throw new Error(responseText && responseText.trim().startsWith('<') ? 'وصل رد HTML بدل JSON. غالباً انتهت الجلسة أو حدث تحويل غير متوقع.' : 'وصل رد غير متوقع من الخادم.');
+            }
+            if (!response.ok || payload.success === false) {
+                throw new Error(payload.error || payload.message || 'تعذر تنفيذ العملية.');
+            }
+            onSuccess(payload, card);
+        } catch (error) {
+            if (card) card.classList.remove('is-processing');
+            if (window.eduverseToast) {
+                window.eduverseToast(error.message || 'تعذر تنفيذ العملية.', 'error');
+            }
+        }
+    }
+
+    const markAllNotificationsButton = document.getElementById('markAllNotificationsReadButton');
+    if (markAllNotificationsButton) {
+        markAllNotificationsButton.addEventListener('click', function(event) {
+            const count = Number(markAllNotificationsButton.dataset.notificationCount || 0);
+            if (count === 0) {
+                event.preventDefault();
+                if (window.eduverseToast) {
+                    window.eduverseToast('لا توجد إشعارات لتعليمها كمقروءة.', 'warning');
+                } else {
+                    alert('لا توجد إشعارات لتعليمها كمقروءة.');
+                }
+            }
+        });
+    }
+    if (list) {
+        list.querySelectorAll('[data-live-call-form]').forEach(function(form) {
+            form.addEventListener('submit', function(event) {
+                event.preventDefault();
+                const action = form.dataset.liveCallAction;
+                submitAjaxForm(form, function(payload, card) {
+                    if (action === 'accept' && payload.redirect_url) {
+                        window.location.href = payload.redirect_url;
+                        return;
+                    }
+                    if (action === 'reject' && card) {
+                        card.remove();
+                        ensureEmptyState();
+                        if (window.eduverseToast) {
+                            window.eduverseToast(payload.message || 'تم رفض الاتصال.', 'info');
+                        }
+                    }
+                });
+            });
+        });
+
+        list.querySelectorAll('[data-delete-notification-form]').forEach(function(form) {
+            form.addEventListener('submit', function(event) {
+                event.preventDefault();
+                submitAjaxForm(form, function(_payload, card) {
+                    if (card) {
+                        card.remove();
+                        ensureEmptyState();
+                        if (window.eduverseToast) {
+                            window.eduverseToast('تم حذف الإشعار.', 'success');
+                        }
+                    }
+                });
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

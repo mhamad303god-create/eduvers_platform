@@ -1,0 +1,571 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ lesson.title }} - {{ course.title }} - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Breadcrumb -->
+    <nav class="breadcrumb">
+        <a href="{% url 'courses:course_list' %}">الكورسات</a>
+        <i class="fas fa-chevron-left"></i>
+        <a href="{% url 'courses:course_detail' course.course_id %}">{{ course.title }}</a>
+        <i class="fas fa-chevron-left"></i>
+        <span>{{ lesson.title }}</span>
+    </nav>
+
+    <div class="lesson-container">
+        <!-- Lesson Header -->
+        <div class="lesson-header">
+            <h1 class="lesson-title">{{ lesson.title }}</h1>
+            {% if lesson.description %}
+                <p class="lesson-description">{{ lesson.description }}</p>
+            {% endif %}
+
+            <div class="lesson-meta">
+                {% if lesson.duration_display %}
+                    <span class="duration">
+                        <i class="fas fa-clock"></i>
+                        {{ lesson.duration_display }}
+                    </span>
+                {% endif %}
+                {% if is_enrolled and progress %}
+                    <span class="progress-status {% if progress.completed %}completed{% endif %}">
+                        {% if progress.completed %}
+                            <i class="fas fa-check-circle"></i> مكتمل
+                        {% else %}
+                            <i class="fas fa-play-circle"></i> قيد المشاهدة
+                        {% endif %}
+                    </span>
+                {% endif %}
+            </div>
+            {% if lesson.video %}
+                <div class="lesson-download-actions">
+                    <a href="{% url 'courses:download_lesson_video' course.course_id lesson.lesson_id %}" class="btn btn-outline-primary">
+                        <i class="fas fa-download"></i> تنزيل هذا الدرس
+                    </a>
+                    <a href="{% url 'courses:download_course_lessons_bundle' course.course_id %}" class="btn btn-outline-success">
+                        <i class="fas fa-box-archive"></i> تنزيل كل دروس الكورس
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Lesson Content -->
+        <div class="lesson-content">
+            {% if lesson.video %}
+                <div class="video-experience mode-cinematic" id="videoExperience">
+                    <div class="video-stage-shell">
+                        <div class="video-stage-backdrop" id="videoBackdrop"></div>
+                        <div class="video-player">
+                            <div class="player-topbar">
+                                <div class="player-badges">
+                                    <span class="player-chip primary"><i class="fas fa-sparkles"></i> تجربة مشاهدة مطورة</span>
+                                    <span class="player-chip"><i class="fas fa-photo-film"></i> خلفية تلقائية من الفيديو</span>
+                                    {% if request.GET.autoplay == '1' %}
+                                        <span class="player-chip accent" id="autoplayBadge"><i class="fas fa-bolt"></i> تشغيل مباشر</span>
+                                    {% endif %}
+                                </div>
+                                <div class="player-theme-switcher">
+                                    <button type="button" class="theme-toggle-btn active" data-mode="cinematic">سينمائي</button>
+                                    <button type="button" class="theme-toggle-btn" data-mode="focus">تركيز</button>
+                                    <button type="button" class="theme-toggle-btn" data-mode="compact">مضغوط</button>
+                                </div>
+                            </div>
+
+                            <div class="video-frame" id="videoFrame">
+                                <video
+                                    id="lessonVideo"
+                                    controls
+                                    playsinline
+                                    preload="metadata"
+                                    {% if lesson.poster_image %}poster="{{ lesson.poster_image.url }}"{% endif %}
+                                    {% if request.GET.autoplay == '1' %}autoplay muted{% endif %}
+                                    {% if is_enrolled %}data-track-progress="true"{% endif %}
+                                >
+                                    <source src="{{ lesson.video.url }}" type="video/mp4">
+                                    متصفحك لا يدعم تشغيل الفيديو.
+                                </video>
+                            </div>
+
+                            <div class="smart-player-footer">
+                                <div class="smart-note">
+                                    <i class="fas fa-circle-play"></i>
+                                    انقر مرة واحدة من بطاقة الدرس وسيبدأ التشغيل تلقائياً هنا عند الإمكان.
+                                </div>
+                                <button type="button" class="sound-restore-btn" id="soundRestoreBtn" hidden>
+                                    <i class="fas fa-volume-up"></i> تشغيل الصوت
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if is_enrolled %}
+                        <div class="video-controls">
+                            <button id="markCompleteBtn" class="btn btn-success {% if progress and progress.completed %}disabled{% endif %}">
+                                <i class="fas fa-check"></i>
+                                {% if progress and progress.completed %}مكتمل{% else %}تحديد كمكتمل{% endif %}
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            {% endif %}
+
+            {% if lesson.content %}
+                <div class="lesson-text">
+                    <h3>محتوى الدرس</h3>
+                    <div class="content">{{ lesson.content|linebreaks }}</div>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Lesson Navigation -->
+        <div class="lesson-navigation">
+            {% if prev_lesson %}
+                <a href="{% url 'courses:lesson_view' course.course_id prev_lesson.lesson_id %}" class="nav-btn prev-btn">
+                    <i class="fas fa-chevron-right"></i>
+                    الدرس السابق
+                    <span class="nav-title">{{ prev_lesson.title }}</span>
+                </a>
+            {% endif %}
+
+            <a href="{% url 'courses:course_detail' course.course_id %}" class="nav-btn back-btn">
+                <i class="fas fa-list"></i>
+                جميع الدروس
+            </a>
+
+            {% if next_lesson %}
+                <a href="{% url 'courses:lesson_view' course.course_id next_lesson.lesson_id %}" class="nav-btn next-btn">
+                    الدرس التالي
+                    <span class="nav-title">{{ next_lesson.title }}</span>
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+            {% endif %}
+        </div>
+
+        <!-- Teacher Actions -->
+        {% if 'teacher' in user_roles and course.teacher.user == request.user %}
+            <div class="teacher-actions">
+                <a href="{% url 'courses:lesson_edit' course.course_id lesson.lesson_id %}" class="btn btn-outline-primary">
+                    <i class="fas fa-edit"></i> تعديل الدرس
+                </a>
+                <a href="{% url 'courses:lesson_create' course.course_id %}" class="btn btn-outline-success">
+                    <i class="fas fa-plus"></i> إضافة درس جديد
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.breadcrumb a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.breadcrumb a:hover {
+    text-decoration: underline;
+}
+
+.lesson-container {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.lesson-header {
+    background: var(--card-bg);
+    padding: 2rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow);
+}
+
+.lesson-title {
+    margin: 0 0 1rem 0;
+    color: var(--text-color);
+    font-size: 2rem;
+}
+
+.lesson-description {
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+}
+
+.lesson-meta {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.lesson-download-actions {
+    margin-top: 1rem;
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.lesson-meta span {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: var(--bg-color);
+    border-radius: 20px;
+    font-size: 0.9rem;
+}
+
+.duration {
+    color: var(--text-muted);
+}
+
+.progress-status {
+    color: var(--primary-color);
+}
+
+.progress-status.completed {
+    color: var(--success-color);
+}
+
+.lesson-content {
+    margin-bottom: 2rem;
+}
+
+.video-experience { margin-bottom: 2rem; }
+.video-stage-shell { position: relative; }
+.video-stage-backdrop { position: absolute; inset: -30px 4% auto; height: 260px; border-radius: 40px; background:
+    radial-gradient(circle at 20% 20%, rgba(14,165,233,.22), transparent 38%),
+    radial-gradient(circle at 80% 30%, rgba(236,72,153,.18), transparent 40%),
+    radial-gradient(circle at 50% 100%, rgba(99,102,241,.18), transparent 42%);
+    filter: blur(30px); opacity: 1; pointer-events:none; }
+.video-player { position: relative; margin-bottom: 2rem; padding: 18px; border-radius: 24px; overflow: hidden; border: 1px solid rgba(125,211,252,.18); background: linear-gradient(180deg, rgba(3,7,18,.80), rgba(8,16,31,.90)); box-shadow: 0 30px 70px -35px rgba(2,6,23,.88), inset 0 1px 0 rgba(255,255,255,.04); }
+.player-topbar { display:flex; justify-content:space-between; gap:14px; flex-wrap:wrap; align-items:center; margin-bottom: 14px; }
+.player-badges { display:flex; flex-wrap:wrap; gap:8px; }
+.player-chip { display:inline-flex; align-items:center; gap:7px; padding:8px 12px; border-radius:999px; background:rgba(15,23,42,.72); border:1px solid rgba(148,163,184,.18); color:#dbeafe; font-size:.8rem; }
+.player-chip.primary { background:linear-gradient(135deg, rgba(14,165,233,.18), rgba(59,130,246,.18)); }
+.player-chip.accent { background:linear-gradient(135deg, rgba(16,185,129,.18), rgba(14,165,233,.18)); color:#dcfce7; }
+.player-theme-switcher { display:flex; gap:8px; flex-wrap:wrap; }
+.theme-toggle-btn { border:1px solid rgba(148,163,184,.18); background:rgba(15,23,42,.72); color:#cbd5e1; padding:9px 12px; border-radius:999px; cursor:pointer; font-weight:700; }
+.theme-toggle-btn.active { color:#fff; border-color: rgba(125,211,252,.55); box-shadow: 0 0 0 1px rgba(125,211,252,.18); }
+.video-frame { position: relative; border-radius: 20px; overflow: hidden; background: #000; isolation:isolate; }
+.video-frame::before { content:""; position:absolute; inset:-20%; background: var(--video-frame-art, radial-gradient(circle at 30% 20%, rgba(14,165,233,.25), transparent 40%), radial-gradient(circle at 70% 70%, rgba(236,72,153,.22), transparent 36%)); filter: blur(26px); transform: scale(1.08); opacity:.92; pointer-events:none; }
+.video-frame::after { content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(255,255,255,.02), transparent 24%, rgba(2,6,23,.02)); pointer-events:none; }
+.video-player video { width: 100%; display:block; position:relative; z-index:1; border-radius: 18px; aspect-ratio: 16/9; background:#000; box-shadow: 0 20px 40px rgba(2,6,23,.4); }
+.smart-player-footer { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-top: 12px; flex-wrap:wrap; }
+.smart-note { color:#93c5fd; display:inline-flex; gap:8px; align-items:center; font-size:.92rem; }
+.sound-restore-btn { border:none; border-radius:999px; padding:10px 14px; cursor:pointer; font-weight:800; color:#fff; background:linear-gradient(135deg, #0ea5e9, #2563eb); box-shadow: 0 12px 24px rgba(37,99,235,.25); }
+.video-experience.mode-focus .video-stage-backdrop { opacity:.45; filter: blur(26px); }
+.video-experience.mode-focus .video-player { background: linear-gradient(180deg, rgba(2,6,23,.98), rgba(2,6,23,1)); }
+.video-experience.mode-compact .video-player { padding: 12px; border-radius: 18px; }
+.video-experience.mode-compact .player-topbar { margin-bottom: 10px; }
+.video-experience.mode-compact .player-chip { padding: 6px 10px; font-size: .74rem; }
+
+.video-controls {
+    margin-top: 1rem;
+    text-align: center;
+}
+
+.lesson-text {
+    background: var(--card-bg);
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+}
+
+.lesson-text h3 {
+    color: var(--text-color);
+    margin: 0 0 1.5rem 0;
+    font-size: 1.3rem;
+}
+
+.content {
+    color: var(--text-color);
+    line-height: 1.8;
+}
+
+.content p {
+    margin-bottom: 1rem;
+}
+
+.content ul, .content ol {
+    margin-bottom: 1rem;
+    padding-right: 2rem;
+}
+
+.content li {
+    margin-bottom: 0.5rem;
+}
+
+.lesson-navigation {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem 1.5rem;
+    background: var(--card-bg);
+    color: var(--text-color);
+    text-decoration: none;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    transition: all 0.3s;
+}
+
+.nav-btn:hover {
+    border-color: var(--primary-color);
+    box-shadow: var(--shadow);
+}
+
+.prev-btn {
+    flex: 1;
+    justify-content: flex-start;
+}
+
+.back-btn {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.back-btn:hover {
+    background: var(--primary-hover);
+    border-color: var(--primary-hover);
+}
+
+.next-btn {
+    flex: 1;
+    justify-content: flex-end;
+}
+
+.nav-title {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+}
+
+.teacher-actions {
+    background: var(--card-bg);
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+    .lesson-title {
+        font-size: 1.5rem;
+    }
+
+    .lesson-navigation {
+        flex-direction: column;
+    }
+
+    .player-topbar,
+    .smart-player-footer {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .nav-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .prev-btn .fa-chevron-right,
+    .next-btn .fa-chevron-left {
+        display: none;
+    }
+
+    .teacher-actions {
+        flex-direction: column;
+    }
+
+    .teacher-actions .btn {
+        width: 100%;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const video = document.getElementById('lessonVideo');
+    const markCompleteBtn = document.getElementById('markCompleteBtn');
+    const experience = document.getElementById('videoExperience');
+    const backdrop = document.getElementById('videoBackdrop');
+    const videoFrame = document.getElementById('videoFrame');
+    const soundRestoreBtn = document.getElementById('soundRestoreBtn');
+    const themeBtns = document.querySelectorAll('.theme-toggle-btn');
+
+    if (themeBtns.length && experience) {
+        themeBtns.forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                themeBtns.forEach(function(item) { item.classList.remove('active'); });
+                btn.classList.add('active');
+                experience.className = `video-experience mode-${btn.dataset.mode}`;
+            });
+        });
+    }
+
+    function extractFrameArt(videoEl) {
+        if (!videoEl || !videoEl.videoWidth || !videoEl.videoHeight) return;
+        try {
+            const canvas = document.createElement('canvas');
+            canvas.width = videoEl.videoWidth;
+            canvas.height = videoEl.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+            const frameUrl = canvas.toDataURL('image/jpeg', 0.72);
+            if (videoFrame) {
+                videoFrame.style.setProperty('--video-frame-art', `url("${frameUrl}")`);
+            }
+            if (backdrop) {
+                backdrop.style.backgroundImage = `radial-gradient(circle at 20% 20%, rgba(14,165,233,.15), transparent 32%), url("${frameUrl}")`;
+                backdrop.style.backgroundSize = 'cover';
+                backdrop.style.backgroundPosition = 'center';
+            }
+        } catch (error) {
+            console.warn('video frame extraction failed', error);
+        }
+    }
+
+    if (video) {
+        {% if lesson.poster_image %}
+        if (videoFrame) {
+            videoFrame.style.setProperty('--video-frame-art', `url("{{ lesson.poster_image.url }}")`);
+        }
+        if (backdrop) {
+            backdrop.style.backgroundImage = `radial-gradient(circle at 20% 20%, rgba(14,165,233,.15), transparent 32%), url("{{ lesson.poster_image.url }}")`;
+            backdrop.style.backgroundSize = 'cover';
+            backdrop.style.backgroundPosition = 'center';
+        }
+        {% endif %}
+
+        const sampleVideoFrame = function() {
+            if (!video.duration || !isFinite(video.duration)) return;
+            const sampleAt = Math.min(10, Math.max(1, video.duration * 0.35));
+            const onSeeked = function() {
+                extractFrameArt(video);
+            };
+            video.addEventListener('seeked', onSeeked, { once: true });
+            video.currentTime = sampleAt;
+        };
+
+        {% if not lesson.poster_image %}
+        video.addEventListener('loadedmetadata', sampleVideoFrame, { once: true });
+        {% endif %}
+
+        {% if request.GET.autoplay == '1' %}
+        const startAutoplay = function() {
+            const attempt = video.play();
+            if (attempt && typeof attempt.catch === 'function') {
+                attempt.catch(function() {
+                    video.muted = true;
+                    const mutedAttempt = video.play();
+                    if (mutedAttempt && typeof mutedAttempt.then === 'function') {
+                        mutedAttempt.then(function() {
+                            if (soundRestoreBtn) soundRestoreBtn.hidden = false;
+                        });
+                    }
+                });
+            }
+        };
+        startAutoplay();
+
+        if (soundRestoreBtn) {
+            soundRestoreBtn.hidden = false;
+            soundRestoreBtn.addEventListener('click', function() {
+                video.muted = false;
+                video.play();
+                soundRestoreBtn.hidden = true;
+            });
+        }
+        {% endif %}
+    }
+
+    {% if is_enrolled %}
+        // Track video progress
+        let progressInterval;
+
+        function startProgressTracking() {
+            progressInterval = setInterval(function() {
+                const currentTime = video.currentTime;
+                const duration = video.duration;
+
+                if (duration > 0) {
+                    // Here you could send progress updates to server
+                    // For now, we'll just track locally
+                    console.log(`Progress: ${currentTime}/${duration}`);
+                }
+            }, 10000); // Update every 10 seconds
+        }
+
+        function stopProgressTracking() {
+            if (progressInterval) {
+                clearInterval(progressInterval);
+            }
+        }
+
+        video.addEventListener('play', startProgressTracking);
+        video.addEventListener('pause', stopProgressTracking);
+        video.addEventListener('ended', function() {
+            stopProgressTracking();
+            // Auto-mark as complete when video ends
+            if (markCompleteBtn && !markCompleteBtn.classList.contains('disabled')) {
+                markCompleteBtn.click();
+            }
+        });
+
+        // Mark lesson as complete
+        if (markCompleteBtn) {
+            markCompleteBtn.addEventListener('click', function(e) {
+                if (this.classList.contains('disabled')) return;
+
+                fetch('{% url "courses:mark_lesson_complete" lesson.lesson_id %}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'Content-Type': 'application/json',
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        this.classList.add('disabled');
+                        this.innerHTML = '<i class="fas fa-check"></i> مكتمل';
+                        location.reload(); // Refresh to update UI
+                    } else {
+                        alert('حدث خطأ في تحديث التقدم');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('حدث خطأ في الاتصال');
+                });
+            });
+        }
+    {% endif %}
+});
+</script>
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends 'base_auth.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "Authentication Error" %}{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/auth.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="login-section">
+    <div class="login-container">
+        <div class="login-info" style="background: linear-gradient(135deg, #ef233c 0%, #d90429 100%);">
+            <h2>{% trans "Access Denied" %}</h2>
+            <p>{% trans "We encountered an issue while trying to log you in." %}</p>
+            <i class="fas fa-exclamation-triangle" style="font-size: 5rem; color: rgba(255,255,255,0.2); margin-top: 20px;"></i>
+        </div>
+
+        <div class="login-form">
+            <div class="form-header">
+                <h2 style="color: var(--error);">{% trans "Authentication Failed" %}</h2>
+                <p>{% blocktrans with provider.name as provider %}An error occurred while attempting to login via your {{ provider }} account.{% endblocktrans %}</p>
+            </div>
+
+            <div class="form-error" style="margin-bottom: 30px;">
+                {{ auth_error.code }}
+                <br>
+                {{ auth_error.exception }}
+            </div>
+
+            <div class="form-footer">
+                <a href="{% url 'accounts:login' %}" class="form-btn">
+                    {% trans "Back to Login" %}
+                    <i class="fas fa-undo"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

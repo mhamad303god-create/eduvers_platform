@@ -1,0 +1,485 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}إضافة درس جديد - {{ course.title }} - {{ block.super }}{% endblock %}
+
+{% block content %}
+<section class="lesson-editor-page">
+    <div class="lesson-editor-glow glow-a"></div>
+    <div class="lesson-editor-glow glow-b"></div>
+
+    <div class="lesson-editor-wrap">
+        <header class="editor-header">
+            <div>
+                <span class="editor-chip"><i class="fas fa-clapperboard"></i> استوديو الدروس</span>
+                <h1>إضافة درس جديد: <span>{{ course.title }}</span></h1>
+                <p>يمكنك رفع درس واحد أو كورس كامل مرة واحدة مع ترتيب تلقائي ومعاينات جاهزة.</p>
+            </div>
+            <a href="{% url 'courses:course_detail' course.course_id %}" class="back-btn">
+                <i class="fas fa-arrow-left"></i> العودة للكورس
+            </a>
+        </header>
+
+        <div class="mode-switcher">
+            <button type="button" class="mode-pill active" data-mode-target="single">رفع درس واحد</button>
+            <button type="button" class="mode-pill" data-mode-target="batch">رفع كورس دفعة واحدة</button>
+        </div>
+
+        <div class="editor-layout">
+            <form method="post" enctype="multipart/form-data" class="editor-form" id="singleLessonForm">
+                {% csrf_token %}
+                <input type="hidden" name="upload_mode" id="singleUploadMode" value="single">
+                <input type="hidden" name="video_duration_seconds" id="singleVideoDurationSeconds">
+                <input type="hidden" name="video_poster_data_url" id="singleVideoPosterDataUrl">
+
+                <section class="panel" data-mode-panel="single">
+                    <div class="panel-title-row">
+                        <h3><i class="fas fa-film"></i> رفع فردي</h3>
+                        <span class="panel-badge">يستخرج المدة وصورة المعاينة تلقائياً</span>
+                    </div>
+
+                    <div class="grid">
+                        <div class="field field-wide">
+                            <label for="{{ form.title.id_for_label }}">عنوان الدرس</label>
+                            {{ form.title }}
+                            {% if form.title.errors %}<small class="err">{{ form.title.errors.0 }}</small>{% endif %}
+                        </div>
+                        <div class="field">
+                            <label for="{{ form.order_index.id_for_label }}">ترتيب الدرس</label>
+                            {{ form.order_index }}
+                            {% if form.order_index.errors %}<small class="err">{{ form.order_index.errors.0 }}</small>{% endif %}
+                        </div>
+                        <div class="field stat-box">
+                            <span class="stat-label">المدة المستخرجة</span>
+                            <strong id="singleDurationPreview">--:--</strong>
+                        </div>
+                        {{ form.status }}
+                        {{ form.video_duration }}
+                        <div class="field field-wide">
+                            <label for="{{ form.description.id_for_label }}">وصف مختصر</label>
+                            {{ form.description }}
+                            {% if form.description.errors %}<small class="err">{{ form.description.errors.0 }}</small>{% endif %}
+                        </div>
+                        <div class="field field-wide">
+                            <label for="{{ form.content.id_for_label }}">النص / الشرح</label>
+                            {{ form.content }}
+                            <small class="hint">يمكنك كتابة الشرح أو الملاحظات الأساسية لهذا الدرس.</small>
+                            {% if form.content.errors %}<small class="err">{{ form.content.errors.0 }}</small>{% endif %}
+                        </div>
+                        <div class="field field-wide checkbox-field">
+                            <label class="checkbox-label" for="{{ form.is_free.id_for_label }}">
+                                {{ form.is_free }}
+                                <span>درس مجاني متاح للجميع</span>
+                            </label>
+                            {% if form.is_free.errors %}<small class="err">{{ form.is_free.errors.0 }}</small>{% endif %}
+                        </div>
+                        <div class="field field-wide">
+                            <label for="{{ form.video.id_for_label }}">ملف الفيديو</label>
+                            {{ form.video }}
+                            <small class="hint">يفضّل MP4. سيتم أخذ لقطة ذكية من حدود أول 10 ثوانٍ لتستخدم كخلفية وبوستر.</small>
+                            {% if form.video.errors %}<small class="err">{{ form.video.errors.0 }}</small>{% endif %}
+                        </div>
+                    </div>
+
+                    <div class="single-preview-card" id="singlePreviewCard">
+                        <div class="single-preview-frame" id="singlePreviewFrame">
+                            <div class="single-preview-empty" id="singlePreviewEmpty">
+                                <i class="fas fa-photo-film"></i>
+                                <span>شرائح المعاينة ستظهر هنا بعد اختيار الفيديو</span>
+                            </div>
+                            <video id="singlePreviewVideo" muted loop playsinline preload="metadata"></video>
+                            <span class="single-preview-duration" id="singlePreviewBadge">--:--</span>
+                        </div>
+                        <div class="single-preview-meta">
+                            <strong id="singlePreviewTitle">معاينة الدرس</strong>
+                            <span>عند مرور الماوس سيتم تشغيل المعاينة الصامتة مثل بطاقات الفيديو الحديثة.</span>
+                        </div>
+                    </div>
+
+                    <div class="actions">
+                        <button type="submit" class="btn-submit">
+                            <i class="fas fa-save"></i> إضافة الدرس
+                        </button>
+                        <a href="{% url 'courses:course_detail' course.course_id %}" class="btn-cancel">إلغاء</a>
+                    </div>
+                </section>
+            </form>
+
+            <form method="post" enctype="multipart/form-data" class="editor-form" id="batchLessonForm">
+                {% csrf_token %}
+                <input type="hidden" name="upload_mode" value="batch">
+                <input type="hidden" name="batch_payload" id="batchPayload">
+
+                <section class="panel hidden-panel" data-mode-panel="batch">
+                    <div class="panel-title-row">
+                        <h3><i class="fas fa-layer-group"></i> رفع جماعي للكورس</h3>
+                        <span class="panel-badge">يرتب الفيديوهات حسب ترتيب اختيار الملفات</span>
+                    </div>
+
+                    <div class="grid">
+                        <div class="field field-wide">
+                            <label for="batchVideosInput">فيديوهات الدروس</label>
+                            <input type="file" id="batchVideosInput" name="batch_videos" accept="video/mp4,video/webm,video/ogg,video/quicktime,.mp4,.webm,.ogg,.mov,.m4v" multiple>
+                            <small class="hint">اختر جميع فيديوهات الكورس مرة واحدة. سيتم اشتقاق العناوين من أسماء الملفات ويمكن تعديلها قبل الرفع.</small>
+                        </div>
+                        <div class="field field-wide">
+                            <label for="batchDescription">وصف موحد لجميع الدروس</label>
+                            <textarea id="batchDescription" name="batch_description" rows="3" placeholder="اختياري: وصف مختصر يطبق على كل الدروس"></textarea>
+                        </div>
+                        <div class="field field-wide">
+                            <label for="batchContent">محتوى / ملاحظات موحدة</label>
+                            <textarea id="batchContent" name="batch_content" rows="4" placeholder="اختياري: ملاحظات أو نص ثابت يرفق بكل الدروس"></textarea>
+                        </div>
+                        <div class="field inline-field">
+                            <label class="checkbox-label" for="batchIsFree">
+                                <input type="checkbox" id="batchIsFree" name="batch_is_free">
+                                <span>جعل كل الدروس مجانية</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="batch-summary" id="batchSummary">
+                        <div>
+                            <span class="summary-label">عدد الفيديوهات</span>
+                            <strong id="batchCount">0</strong>
+                        </div>
+                        <div>
+                            <span class="summary-label">إجمالي الزمن</span>
+                            <strong id="batchTotalDuration">0:00</strong>
+                        </div>
+                        <div>
+                            <span class="summary-label">الترتيب</span>
+                            <strong>تلقائي</strong>
+                        </div>
+                    </div>
+
+                    <div class="batch-grid" id="batchGrid">
+                        <div class="empty-state">
+                            <i class="fas fa-clapperboard"></i>
+                            <p>بعد اختيار الفيديوهات ستظهر بطاقات تشبه الشرائح مع اللقطة والمدة والترتيب.</p>
+                        </div>
+                    </div>
+
+                    <div class="actions">
+                        <button type="submit" class="btn-submit" id="batchSubmitBtn">
+                            <i class="fas fa-cloud-upload-alt"></i> رفع الكورس
+                        </button>
+                        <a href="{% url 'courses:course_detail' course.course_id %}" class="btn-cancel">إلغاء</a>
+                    </div>
+                </section>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+.lesson-editor-page { position: relative; min-height: calc(100vh - 80px); padding: 34px 16px 56px; overflow: hidden; }
+.lesson-editor-glow { position: absolute; border-radius: 50%; filter: blur(60px); opacity: .26; pointer-events: none; }
+.glow-a { width: 320px; height: 320px; background: #06b6d4; top: -100px; right: -70px; }
+.glow-b { width: 440px; height: 440px; background: #3b82f6; bottom: -220px; left: -120px; }
+.lesson-editor-wrap { max-width: 1240px; margin: 0 auto; position: relative; z-index: 1; }
+.editor-header { display: flex; justify-content: space-between; gap: 18px; align-items: flex-start; margin-bottom: 18px; }
+.editor-chip { display: inline-flex; align-items: center; gap: 7px; border-radius: 999px; padding: 6px 12px; color: #67e8f9; border: 1px solid rgba(103, 232, 249, .35); background: rgba(8, 47, 73, .5); }
+.editor-header h1 { margin: 10px 0 8px; font-size: clamp(1.5rem, 2.1vw, 2.2rem); color: #f8fafc; }
+.editor-header h1 span { color: #22d3ee; }
+.editor-header p { margin: 0; color: #9fb3c8; }
+.back-btn { border: 1px solid var(--border-color); color: var(--text-secondary); text-decoration: none; border-radius: 12px; padding: 10px 14px; background: color-mix(in srgb, var(--card-color) 88%, #02060f); }
+.mode-switcher { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+.mode-pill { border: 1px solid rgba(125, 211, 252, .25); background: rgba(8, 15, 29, .8); color: #bfd5ef; border-radius: 999px; padding: 10px 16px; font-weight: 700; cursor: pointer; }
+.mode-pill.active { color: #fff; background: linear-gradient(135deg, rgba(14,165,233,.22), rgba(59,130,246,.24)); border-color: rgba(125, 211, 252, .6); }
+.editor-layout { display: grid; gap: 16px; }
+.editor-form { display: block; }
+.panel { border-radius: 20px; border: 1px solid rgba(71, 85, 105, .52); background: linear-gradient(165deg, rgba(15, 23, 42, 0.92), rgba(7, 16, 30, 0.92)); padding: 18px; box-shadow: 0 14px 30px -20px rgba(14, 165, 233, 0.55); }
+.hidden-panel { display: none; }
+.panel-title-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+.panel h3 { margin: 0; font-size: 1.08rem; color: #e2e8f0; display: flex; align-items: center; gap: 8px; }
+.panel h3 i { color: #38bdf8; }
+.panel-badge { border-radius: 999px; padding: 6px 10px; font-size: .78rem; color: #dbeafe; background: rgba(14, 165, 233, .12); border: 1px solid rgba(125, 211, 252, .22); }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.field { display: flex; flex-direction: column; gap: 7px; }
+.field-wide { grid-column: 1 / -1; }
+.inline-field { justify-content: end; }
+.field label { color: #b7cae0; font-size: .9rem; font-weight: 600; }
+.field input, .field textarea, .field select {
+    background: #071126;
+    color: #f8fafc;
+    border: 1px solid rgba(100, 116, 139, .68);
+    border-radius: 10px;
+    padding: 11px 12px;
+    transition: all .2s ease;
+}
+.field textarea { min-height: 130px; resize: vertical; }
+.field input:focus, .field textarea:focus, .field select:focus { border-color: #38bdf8; box-shadow: 0 0 0 4px rgba(56, 189, 248, .14); outline: none; transform: translateY(-1px); }
+.checkbox-field { padding: 10px 12px; border-radius: 10px; border: 1px dashed rgba(56, 189, 248, .48); background: rgba(14, 116, 144, .08); }
+.checkbox-label { display: inline-flex; align-items: center; gap: 8px; color: #e2e8f0; cursor: pointer; font-weight: 600; }
+.hint { color: #8fa8c3; font-size: .81rem; }
+.err { color: #f87171; font-size: .8rem; }
+.stat-box { justify-content: center; border-radius: 14px; background: linear-gradient(160deg, rgba(2, 6, 23, .9), rgba(13, 24, 45, .88)); border: 1px solid rgba(125, 211, 252, .16); min-height: 92px; }
+.stat-label { color: #8fa8c3; font-size: .8rem; }
+.stat-box strong { color: #f8fafc; font-size: 1.35rem; }
+.single-preview-card { margin-top: 16px; border-radius: 20px; border: 1px solid rgba(125, 211, 252, .2); overflow: hidden; background: rgba(2, 6, 23, .65); }
+.single-preview-frame { position: relative; aspect-ratio: 16/9; background: linear-gradient(180deg, rgba(2,6,23,.06), rgba(2,6,23,.28)), var(--single-frame-art, radial-gradient(circle at 25% 20%, rgba(56, 189, 248, .18), transparent 36%), #040912) center/cover no-repeat; }
+.single-preview-frame::before { content: ""; position: absolute; inset: 0; background: var(--single-frame-art); background-size: cover; background-position: center; filter: blur(18px) saturate(1.18); transform: scale(1.08); opacity: .5; }
+.single-preview-empty, #singlePreviewVideo { position: relative; z-index: 1; width: 100%; height: 100%; }
+.single-preview-empty { display: grid; place-items: center; gap: 10px; color: #8fa8c3; text-align: center; }
+#singlePreviewVideo { object-fit: cover; display: none; }
+.single-preview-card.ready #singlePreviewVideo { display: block; }
+.single-preview-card.ready .single-preview-empty { display: none; }
+.single-preview-duration { position: absolute; left: 12px; bottom: 12px; z-index: 2; border-radius: 999px; padding: 6px 10px; color: #fff; background: rgba(2, 6, 23, .8); border: 1px solid rgba(148, 163, 184, .24); font-weight: 700; }
+.single-preview-meta { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 14px; color: #cbd5e1; }
+.single-preview-meta strong { color: #f8fafc; }
+.batch-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 16px 0; }
+.batch-summary > div { border-radius: 14px; border: 1px solid rgba(125, 211, 252, .14); background: rgba(2, 6, 23, .55); padding: 12px; }
+.summary-label { display: block; color: #8fa8c3; font-size: .78rem; margin-bottom: 6px; }
+.batch-summary strong { color: #f8fafc; font-size: 1.2rem; }
+.batch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+.empty-state { border: 1px dashed rgba(125, 211, 252, .24); border-radius: 18px; padding: 26px; color: #93a9c5; text-align: center; grid-column: 1 / -1; }
+.empty-state i { font-size: 2.2rem; color: #38bdf8; margin-bottom: 8px; }
+.batch-card { position: relative; overflow: hidden; border-radius: 20px; border: 1px solid rgba(148, 163, 184, .22); background: linear-gradient(165deg, rgba(8, 16, 31, .96), rgba(16, 24, 44, .98)), var(--frame-art, #000) center/cover no-repeat; }
+.batch-card::before { content: ""; position: absolute; inset: 0; background: var(--frame-art); background-size: cover; background-position: center; filter: blur(18px) saturate(1.16); transform: scale(1.08); opacity: .45; }
+.batch-frame { position: relative; aspect-ratio: 16/9; background: linear-gradient(180deg, rgba(2,6,23,.04), rgba(2,6,23,.34)); overflow: hidden; }
+.batch-frame video { width: 100%; height: 100%; object-fit: cover; position: relative; z-index: 1; transition: transform .35s ease; }
+.batch-card:hover .batch-frame video { transform: scale(1.05); }
+.batch-overlay { position: absolute; inset: 0; z-index: 2; background: linear-gradient(180deg, rgba(2,6,23,.02), rgba(2,6,23,.18) 45%, rgba(2,6,23,.55)); pointer-events: none; }
+.batch-order { position: absolute; top: 10px; right: 10px; z-index: 3; border-radius: 999px; padding: 5px 9px; background: rgba(14, 165, 233, .9); color: #fff; font-size: .76rem; font-weight: 800; }
+.batch-duration { position: absolute; left: 10px; bottom: 10px; z-index: 3; border-radius: 999px; padding: 5px 9px; background: rgba(2, 6, 23, .82); color: #fff; font-size: .74rem; font-weight: 700; }
+.batch-card-body { position: relative; z-index: 1; padding: 12px; display: grid; gap: 8px; }
+.batch-title-input { width: 100%; background: rgba(2, 6, 23, .8); color: #f8fafc; border: 1px solid rgba(100, 116, 139, .48); border-radius: 10px; padding: 10px 12px; }
+.batch-filename { color: #8fa8c3; font-size: .78rem; }
+.actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; flex-wrap: wrap; }
+.btn-submit { border: none; border-radius: 10px; padding: 11px 16px; color: #fff; font-weight: 700; background: linear-gradient(120deg, #0ea5e9, #06b6d4); box-shadow: 0 12px 22px rgba(14, 165, 233, 0.3); }
+.btn-cancel { border-radius: 10px; padding: 11px 16px; text-decoration: none; color: #cbd5e1; border: 1px solid rgba(100, 116, 139, .62); background: rgba(15, 23, 42, .74); }
+@media (max-width: 900px) { .editor-header { flex-direction: column; } .grid, .batch-summary { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const modeButtons = document.querySelectorAll('[data-mode-target]');
+    const modePanels = document.querySelectorAll('[data-mode-panel]');
+
+    const formatDuration = function(totalSeconds) {
+        const seconds = Number(totalSeconds) || 0;
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const remaining = Math.floor(seconds % 60);
+        if (hours > 0) {
+            return `${hours}:${String(minutes).padStart(2, '0')}:${String(remaining).padStart(2, '0')}`;
+        }
+        return `${minutes}:${String(remaining).padStart(2, '0')}`;
+    };
+
+    const titleFromFilename = function(filename) {
+        return filename.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
+    };
+
+    const activateMode = function(mode) {
+        modeButtons.forEach(function(button) {
+            button.classList.toggle('active', button.dataset.modeTarget === mode);
+        });
+        modePanels.forEach(function(panel) {
+            panel.classList.toggle('hidden-panel', panel.dataset.modePanel !== mode);
+        });
+    };
+
+    modeButtons.forEach(function(button) {
+        button.addEventListener('click', function() {
+            activateMode(button.dataset.modeTarget);
+        });
+    });
+
+    const sampleVideo = function(file, preferredSecond) {
+        return new Promise(function(resolve, reject) {
+            const video = document.createElement('video');
+            video.preload = 'metadata';
+            video.muted = true;
+            video.playsInline = true;
+            const objectUrl = URL.createObjectURL(file);
+
+            video.onloadedmetadata = function() {
+                const safeDuration = Math.max(1, Math.floor(video.duration || 0));
+                const sampleAt = Math.min(preferredSecond || 10, Math.max(1, safeDuration > 12 ? 10 : Math.floor(safeDuration * 0.35) || 1));
+                video.currentTime = sampleAt;
+            };
+
+            video.onseeked = function() {
+                try {
+                    const width = Math.min(video.videoWidth || 640, 640);
+                    const height = Math.round(width * 9 / 16);
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const context = canvas.getContext('2d');
+                    context.drawImage(video, 0, 0, width, height);
+                    const posterDataUrl = canvas.toDataURL('image/jpeg', 0.72);
+                    const durationSeconds = Math.max(1, Math.round(video.duration || 0));
+                    resolve({
+                        objectUrl,
+                        posterDataUrl,
+                        durationSeconds,
+                    });
+                } catch (error) {
+                    reject(error);
+                }
+            };
+
+            video.onerror = function() {
+                reject(new Error('video load failed'));
+            };
+
+            video.src = objectUrl;
+        });
+    };
+
+    const singleVideoInput = document.getElementById('{{ form.video.id_for_label }}');
+    const singleTitleInput = document.getElementById('{{ form.title.id_for_label }}');
+    const singleDurationInput = document.getElementById('singleVideoDurationSeconds');
+    const singlePosterInput = document.getElementById('singleVideoPosterDataUrl');
+    const singleDurationPreview = document.getElementById('singleDurationPreview');
+    const singlePreviewBadge = document.getElementById('singlePreviewBadge');
+    const singlePreviewFrame = document.getElementById('singlePreviewFrame');
+    const singlePreviewVideo = document.getElementById('singlePreviewVideo');
+    const singlePreviewCard = document.getElementById('singlePreviewCard');
+    const singlePreviewTitle = document.getElementById('singlePreviewTitle');
+
+    if (singleVideoInput) {
+        singleVideoInput.addEventListener('change', async function() {
+            const file = this.files && this.files[0];
+            if (!file) {
+                return;
+            }
+            if (singleTitleInput && !singleTitleInput.value.trim()) {
+                singleTitleInput.value = titleFromFilename(file.name);
+            }
+            singlePreviewTitle.textContent = singleTitleInput && singleTitleInput.value.trim() ? singleTitleInput.value.trim() : 'معاينة الدرس';
+            try {
+                const meta = await sampleVideo(file, 10);
+                singleDurationInput.value = meta.durationSeconds;
+                singlePosterInput.value = meta.posterDataUrl;
+                singleDurationPreview.textContent = formatDuration(meta.durationSeconds);
+                singlePreviewBadge.textContent = formatDuration(meta.durationSeconds);
+                singlePreviewVideo.src = meta.objectUrl;
+                singlePreviewVideo.currentTime = Math.min(10, Math.max(1, meta.durationSeconds > 12 ? 10 : Math.floor(meta.durationSeconds * 0.35)));
+                singlePreviewVideo.poster = meta.posterDataUrl;
+                singlePreviewFrame.style.setProperty('--single-frame-art', `url("${meta.posterDataUrl}")`);
+                singlePreviewCard.classList.add('ready');
+            } catch (error) {
+                console.warn('single preview failed', error);
+            }
+        });
+
+        singlePreviewCard.addEventListener('mouseenter', function() {
+            if (!singlePreviewVideo.src) return;
+            singlePreviewVideo.play().catch(function() {});
+        });
+        singlePreviewCard.addEventListener('mouseleave', function() {
+            singlePreviewVideo.pause();
+        });
+    }
+
+    const batchInput = document.getElementById('batchVideosInput');
+    const batchGrid = document.getElementById('batchGrid');
+    const batchPayloadInput = document.getElementById('batchPayload');
+    const batchCount = document.getElementById('batchCount');
+    const batchTotalDuration = document.getElementById('batchTotalDuration');
+    let batchEntries = [];
+
+    const syncBatchPayload = function() {
+        batchPayloadInput.value = JSON.stringify(batchEntries.map(function(item, index) {
+            return {
+                fileName: item.fileName,
+                title: item.title,
+                durationSeconds: item.durationSeconds,
+                orderIndex: index + 1,
+                posterDataUrl: item.posterDataUrl,
+            };
+        }));
+        batchCount.textContent = String(batchEntries.length);
+        const total = batchEntries.reduce(function(sum, item) { return sum + (item.durationSeconds || 0); }, 0);
+        batchTotalDuration.textContent = formatDuration(total);
+    };
+
+    const renderBatchCards = function() {
+        if (!batchEntries.length) {
+            batchGrid.innerHTML = '<div class="empty-state"><i class="fas fa-clapperboard"></i><p>بعد اختيار الفيديوهات ستظهر بطاقات تشبه الشرائح مع اللقطة والمدة والترتيب.</p></div>';
+            syncBatchPayload();
+            return;
+        }
+
+        batchGrid.innerHTML = batchEntries.map(function(item, index) {
+            const safePoster = item.posterDataUrl ? item.posterDataUrl.replace(/"/g, '&quot;') : '';
+            const safeTitle = (item.title || '').replace(/"/g, '&quot;');
+            const safeFilename = item.fileName.replace(/"/g, '&quot;');
+            return `
+                <article class="batch-card" style="--frame-art:url('${safePoster}')">
+                    <div class="batch-frame">
+                        <video muted loop playsinline preload="metadata" data-batch-preview="${index}" poster="${safePoster}">
+                            <source src="${item.objectUrl}" type="${item.type}">
+                        </video>
+                        <div class="batch-overlay"></div>
+                        <span class="batch-order">الترتيب ${index + 1}</span>
+                        <span class="batch-duration">${formatDuration(item.durationSeconds)}</span>
+                    </div>
+                    <div class="batch-card-body">
+                        <input type="text" class="batch-title-input" value="${safeTitle}" data-title-index="${index}">
+                        <span class="batch-filename">${safeFilename}</span>
+                    </div>
+                </article>
+            `;
+        }).join('');
+
+        batchGrid.querySelectorAll('[data-title-index]').forEach(function(input) {
+            input.addEventListener('input', function() {
+                const index = Number(input.dataset.titleIndex);
+                batchEntries[index].title = input.value.trim() || titleFromFilename(batchEntries[index].fileName);
+                syncBatchPayload();
+            });
+        });
+
+        batchGrid.querySelectorAll('[data-batch-preview]').forEach(function(video) {
+            const card = video.closest('.batch-card');
+            card.addEventListener('mouseenter', function() {
+                video.play().catch(function() {});
+            });
+            card.addEventListener('mouseleave', function() {
+                video.pause();
+                video.currentTime = Math.min(10, Math.max(1, Math.floor(video.duration * 0.25) || 1));
+            });
+        });
+
+        syncBatchPayload();
+    };
+
+    if (batchInput) {
+        batchInput.addEventListener('change', async function() {
+            const files = Array.from(this.files || []);
+            batchEntries = [];
+            renderBatchCards();
+
+            for (let index = 0; index < files.length; index += 1) {
+                const file = files[index];
+                try {
+                    const meta = await sampleVideo(file, 10);
+                    batchEntries.push({
+                        fileName: file.name,
+                        title: titleFromFilename(file.name),
+                        durationSeconds: meta.durationSeconds,
+                        posterDataUrl: meta.posterDataUrl,
+                        objectUrl: meta.objectUrl,
+                        type: file.type || 'video/mp4',
+                    });
+                    renderBatchCards();
+                } catch (error) {
+                    console.warn('batch preview failed', file.name, error);
+                }
+            }
+        });
+    }
+
+    activateMode('single');
+});
+</script>
+{% endblock %}

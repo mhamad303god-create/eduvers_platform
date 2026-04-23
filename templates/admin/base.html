@@ -1,0 +1,101 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}{% endblock %} | EduVerse Admin</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- DaisyUI -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{% static 'css/admin_custom.css' %}">
+    {% block extrahead %}{% endblock %}
+</head>
+<body class="bg-base-200">
+    <div class="drawer lg:drawer-open">
+        <input id="drawer-toggle" type="checkbox" class="drawer-toggle" />
+        <div class="drawer-content">
+            <!-- Navbar -->
+            <div class="navbar bg-base-100 lg:hidden">
+                <div class="flex-none">
+                    <label for="drawer-toggle" class="btn btn-square btn-ghost">
+                        <i class="fas fa-bars"></i>
+                    </label>
+                </div>
+                <div class="flex-1">
+                    <a class="btn btn-ghost normal-case text-xl">
+                        <i class="fas fa-graduation-cap text-primary"></i>
+                        EduVerse Admin
+                    </a>
+                </div>
+                <div class="flex-none">
+                    <div class="dropdown dropdown-end">
+                        <label tabindex="0" class="btn btn-ghost btn-circle avatar">
+                            <div class="w-10 rounded-full">
+                                <img src="{% static 'images/admin-avatar.png' %}" alt="Admin" />
+                            </div>
+                        </label>
+                        <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
+                            <li><a href="{% url 'admin:password_change' %}">تغيير كلمة المرور</a></li>
+                            <li><a href="{% url 'admin:logout' %}">تسجيل الخروج</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Page content -->
+            <div class="p-4">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} mb-4">
+                            <i class="fas fa-info-circle"></i>
+                            <span>{{ message }}</span>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="drawer-side">
+            <label for="drawer-toggle" class="drawer-overlay"></label>
+            <aside class="min-h-full w-80 bg-base-100 text-base-content">
+                <div class="p-4">
+                    <a class="btn btn-ghost normal-case text-xl mb-4">
+                        <i class="fas fa-graduation-cap text-primary"></i>
+                        EduVerse Admin
+                    </a>
+                </div>
+
+                <ul class="menu p-4 w-80 min-h-full bg-base-100 text-base-content">
+                    <li class="menu-title">
+                        <span>الإدارة</span>
+                    </li>
+                    <li><a href="{% url 'admin:index' %}"><i class="fas fa-tachometer-alt"></i> لوحة التحكم</a></li>
+                    <li><a href="{% url 'admin:accounts_user_changelist' %}"><i class="fas fa-users"></i> المستخدمون</a></li>
+                    <li><a href="{% url 'admin:courses_course_changelist' %}"><i class="fas fa-book"></i> الكورسات</a></li>
+                    <li><a href="{% url 'admin:assessments_assessment_changelist' %}"><i class="fas fa-clipboard-check"></i> التقييمات</a></li>
+                    <li><a href="{% url 'admin:bookings_booking_changelist' %}"><i class="fas fa-calendar-check"></i> الحجوزات</a></li>
+                    <li><a href="{% url 'admin:notifications_message_changelist' %}"><i class="fas fa-envelope"></i> الرسائل</a></li>
+                    <li><a href="{% url 'admin:payments_payment_changelist' %}"><i class="fas fa-credit-card"></i> المدفوعات</a></li>
+
+                    <li class="menu-title mt-4">
+                        <span>الحساب</span>
+                    </li>
+                    <li><a href="{% url 'admin:password_change' %}"><i class="fas fa-key"></i> تغيير كلمة المرور</a></li>
+                    <li><a href="{% url 'admin:logout' %}"><i class="fas fa-sign-out-alt"></i> تسجيل الخروج</a></li>
+                </ul>
+            </aside>
+        </div>
+    </div>
+
+    <script src="{% static 'js/admin_custom.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

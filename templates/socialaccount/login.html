@@ -1,0 +1,53 @@
+{% extends 'base_auth.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "Sign In" %}{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/auth.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="login-section">
+    <div class="login-container">
+        <div class="login-info">
+            <h2>{% trans "Fast & Secure Login" %}</h2>
+            <p>{% trans "You are about to sign in using a third-party account." %}</p>
+            <ul class="login-features">
+                <li><i class="fas fa-shield-alt"></i> {% trans "Secure Authentication" %}</li>
+                <li><i class="fas fa-bolt"></i> {% trans "Quick Access" %}</li>
+                <li><i class="fas fa-sync"></i> {% trans "Data Sync" %}</li>
+            </ul>
+        </div>
+
+        <div class="login-form">
+            <div class="form-header">
+                {% if process == "connect" %}
+                    <h2>{% trans "Connect Account" %}</h2>
+                    <p>{% blocktrans with provider.name as provider %}Connect your {{ provider }} account{% endblocktrans %}</p>
+                {% else %}
+                    <h2>{% trans "Sign In" %}</h2>
+                    <p>{% blocktrans with provider.name as provider %}Sign in via {{ provider }}{% endblocktrans %}</p>
+                {% endif %}
+            </div>
+
+            <p class="text-center mb-4">
+                {% trans "You are about to connect a new third-party account from" %} <strong>{{ provider.name }}</strong>.
+            </p>
+
+            <form method="post">
+                {% csrf_token %}
+                <button type="submit" class="form-btn">
+                    {% trans "Continue" %}
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+            </form>
+            
+            <div class="form-footer">
+                <p><a href="{% url 'accounts:login' %}">{% trans "Cancel" %}</a></p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,124 @@
+﻿python : Creating test database for alias 'default' 
+('file:memorydb_default?mode=memory&cache=shared')...
+At line:1 char:32
++ ... seplatform; python manage.py test notifications --verbosity 2 2>&1 |  ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Creating test d...che=shared')... 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+Found 10 test(s).
+Operations to perform:
+  Synchronize unmigrated apps: allauth, corsheaders, django_daisy, facebook, google, humanize, messages, staticfiles, widget_tweaks
+  Apply all migrations: account, accounts, admin, assessments, auth, bookings, contenttypes, courses, notifications, payments, sessions, sites, socialaccount
+Synchronizing apps without migrations:
+  Creating tables...
+    Running deferred SQL...
+Running migrations:
+  Applying contenttypes.0001_initial... OK
+  Applying contenttypes.0002_remove_content_type_name... OK
+  Applying auth.0001_initial... OK
+  Applying auth.0002_alter_permission_name_max_length... OK
+  Applying auth.0003_alter_user_email_max_length... OK
+  Applying auth.0004_alter_user_username_opts... OK
+  Applying auth.0005_alter_user_last_login_null... OK
+  Applying auth.0006_require_contenttypes_0002... OK
+  Applying auth.0007_alter_validators_add_error_messages... OK
+  Applying auth.0008_alter_user_username_max_length... OK
+  Applying auth.0009_alter_user_last_name_max_length... OK
+  Applying auth.0010_alter_group_name_max_length... OK
+  Applying auth.0011_update_proxy_permissions... OK
+  Applying auth.0012_alter_user_first_name_max_length... OK
+  Applying accounts.0001_initial... OK
+  Applying account.0001_initial... OK
+  Applying account.0002_email_max_length... OK
+  Applying account.0003_alter_emailaddress_create_unique_verified_email... OK
+  Applying account.0004_alter_emailaddress_drop_unique_email... OK
+  Applying account.0005_emailaddress_idx_upper_email... OK
+  Applying account.0006_emailaddress_lower... OK
+  Applying account.0007_emailaddress_idx_email... OK
+  Applying account.0008_emailaddress_unique_primary_email_fixup... OK
+  Applying account.0009_emailaddress_unique_primary_email... OK
+  Applying accounts.0002_alter_user_id_alter_userrole_id... OK
+  Applying accounts.0003_teacherprofile_subjects_alter_user_username... OK
+  Applying accounts.0004_alter_user_id_alter_userrole_id... OK
+  Applying accounts.0005_studentprofile_avatar_teacherprofile_avatar... OK
+  Applying accounts.0006_remove_studentprofile_avatar_and_more... OK
+  Applying admin.0001_initial... OK
+  Applying admin.0002_logentry_remove_auto_add... OK
+  Applying admin.0003_logentry_add_action_flag_choices... OK
+  Applying courses.0001_initial... OK
+  Applying bookings.0001_initial... OK
+  Applying assessments.0001_initial... OK
+  Applying bookings.0002_booking_live_fields... OK
+  Applying courses.0002_remove_course_preview_video_url_and_more... OK
+  Applying courses.0003_teachersubjects... OK
+  Applying courses.0004_alter_course_preview_video_alter_course_thumbnail... OK
+  Applying courses.0005_courselesson_poster_image_and_duration_seconds... OK
+  Applying notifications.0001_initial... OK
+  Applying notifications.0002_rename_issue_date_field... OK
+  Applying notifications.0003_auto_20260205_0052... OK
+  Applying notifications.0004_certificate_certificate_file_certificate_enrollment_and_more... OK
+  Applying notifications.0005_contactrequest... OK
+  Applying notifications.0006_livecall_livecallparticipant... OK
+  Applying notifications.0007_livecall_end_reason... OK
+  Applying notifications.0008_message_attachment_file... OK
+  Applying notifications.0009_message_delete_flags... OK
+  Applying notifications.0010_livecall_room_path_participant_presence... OK
+  Applying notifications.0011_livecall_archived_by_initiator_and_newslettersubscription... OK
+  Applying notifications.0012_alter_notification_type_and_more... OK
+  Applying payments.0001_initial... OK
+  Applying sessions.0001_initial... OK
+  Applying sites.0001_initial... OK
+  Applying sites.0002_alter_domain_unique... OK
+  Applying socialaccount.0001_initial... OK
+  Applying socialaccount.0002_token_max_lengths... OK
+  Applying socialaccount.0003_extra_data_default_dict... OK
+  Applying socialaccount.0004_app_provider_id_settings... OK
+  Applying socialaccount.0005_socialtoken_nullable_app... OK
+test_forward_message_reuses_existing_attachment (notifications.tests.LiveCallFl
+owTests.test_forward_message_reuses_existing_attachment) ... FAIL
+test_initiator_can_archive_finished_call (notifications.tests.LiveCallFlowTests
+.test_initiator_can_archive_finished_call) ... ok
+test_live_call_room_renders_local_signaling_context (notifications.tests.LiveCa
+llFlowTests.test_live_call_room_renders_local_signaling_context) ... ok
+test_live_call_room_shows_localhost_hint_for_non_secure_host (notifications.tes
+ts.LiveCallFlowTests.test_live_call_room_shows_localhost_hint_for_non_secure_ho
+st) ... ok
+test_message_attachment_can_be_downloaded_by_receiver (notifications.tests.Live
+CallFlowTests.test_message_attachment_can_be_downloaded_by_receiver) ... ok
+test_newsletter_subscription_can_be_created_from_home (notifications.tests.Live
+CallFlowTests.test_newsletter_subscription_can_be_created_from_home) ... ok
+test_notification_list_excludes_message_type_notifications (notifications.tests
+.LiveCallFlowTests.test_notification_list_excludes_message_type_notifications) 
+... ok
+test_student_can_accept_call_via_ajax 
+(notifications.tests.LiveCallFlowTests.test_student_can_accept_call_via_ajax) 
+... ok
+test_student_reject_notifies_initiator_and_redirects_to_list (notifications.tes
+ts.LiveCallFlowTests.test_student_reject_notifies_initiator_and_redirects_to_li
+st) ... ok
+test_teacher_call_creation_uses_local_room_url (notifications.tests.LiveCallFlo
+wTests.test_teacher_call_creation_uses_local_room_url) ... ok
+
+======================================================================
+FAIL: test_forward_message_reuses_existing_attachment (notifications.tests.Live
+CallFlowTests.test_forward_message_reuses_existing_attachment)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\PC1\Desktop\alshamakh\مشروع منصة حجز دروس 
+خصوصية\eduverseplatform\notifications\tests.py", line 199, in 
+test_forward_message_reuses_existing_attachment
+    self.assertEqual(response.status_code, 302)
+AssertionError: 200 != 302
+
+----------------------------------------------------------------------
+Ran 10 tests in 22.580s
+
+FAILED (failures=1)
+Destroying test database for alias 'default' 
+('file:memorydb_default?mode=memory&cache=shared')...
+
+  Applying socialaccount.0006_alter_socialaccount_extra_data... OK
+System check identified no issues (0 silenced).

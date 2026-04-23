@@ -1,0 +1,63 @@
+{% extends 'layouts/dashboard_base.html' %}
+
+{% block title %}إدارة التقييمات - EduVerse{% endblock %}
+
+{% block dashboard_content %}
+<section class="dashboard-section">
+    <div class="section-header">
+        <div class="section-title"><i class="fas fa-clipboard-list"></i> تقييماتي</div>
+        <a href="{% url 'assessments:assessment_create' %}" class="btn-dash btn-primary-dash">
+            <i class="fas fa-plus"></i> إنشاء تقييم جديد
+        </a>
+    </div>
+
+    {% if assessments %}
+        <div style="overflow-x:auto;">
+            <table class="dash-table">
+                <thead>
+                    <tr>
+                        <th>العنوان</th>
+                        <th>النوع</th>
+                        <th>الحالة</th>
+                        <th>عدد الأسئلة</th>
+                        <th>تاريخ الإنشاء</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for assessment in assessments %}
+                        <tr>
+                            <td>{{ assessment.title }}</td>
+                            <td>{{ assessment.get_type_display }}</td>
+                            <td>
+                                {% if assessment.status == 'draft' %}
+                                    <span class="status-badge status-pending">مسودة</span>
+                                {% elif assessment.status == 'published' %}
+                                    <span class="status-badge status-active">منشور</span>
+                                {% else %}
+                                    <span class="status-badge">مؤرشف</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ assessment.assessmentquestion_set.count }}</td>
+                            <td>{{ assessment.created_at|date:"Y/m/d" }}</td>
+                            <td style="display:flex; gap:8px;">
+                                <a href="{% url 'assessments:question_list' assessment.assessment_id %}" class="btn-dash btn-outline-dash" style="padding:6px 10px;">الأسئلة</a>
+                                <a href="{% url 'assessments:assessment_edit' assessment.assessment_id %}" class="btn-dash btn-outline-dash" style="padding:6px 10px;">تعديل</a>
+                                {% if assessment.status == 'draft' %}
+                                    <a href="{% url 'assessments:assessment_publish' assessment.assessment_id %}" class="btn-dash btn-primary-dash" style="padding:6px 10px;">نشر</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div style="text-align:center; padding:48px 20px; color:var(--dash-text-muted);">
+            <i class="fas fa-clipboard fa-3x" style="margin-bottom:10px;"></i>
+            <h3>لا توجد تقييمات بعد</h3>
+            <p>ابدأ بإنشاء أول تقييم لطلابك.</p>
+        </div>
+    {% endif %}
+</section>
+{% endblock %}

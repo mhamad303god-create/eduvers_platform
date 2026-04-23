@@ -1,0 +1,327 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}كورساتي - EduVerse{% endblock %}
+
+{% block content %}
+<section class="auth-main" style="min-height: calc(100vh - 80px); padding: 40px 0;">
+    <div class="container" style="max-width: 1200px;">
+        
+        <!-- Header -->
+        <div class="booking-header animate-fade-in-up" style="margin-bottom: 30px; border-radius: 20px;">
+            <div class="header-content">
+                <h1><i class="fas fa-chalkboard-teacher"></i> استوديو المعلم</h1>
+                <p>إدارة الكورسات والمحتوى التعليمي الخاص بك</p>
+            </div>
+            <a href="{% url 'courses:course_create' %}" class="create-btn hover-glow">
+                <i class="fas fa-plus"></i> إنشاء كورس جديد
+            </a>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid animate-fade-in-up" style="animation-delay: 0.1s;">
+            <div class="stat-card">
+                <div class="stat-icon bg-primary"><i class="fas fa-book"></i></div>
+                <div class="stat-info">
+                    <h3>{{ courses|length }}</h3>
+                    <p>إجمالي الكورسات</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-success"><i class="fas fa-users"></i></div>
+                <div class="stat-info">
+                    <h3>{% widthratio courses|length 1 1 %}</h3> <!-- Placeholder logic, ideal is sum of enrollments -->
+                    <p>إجمالي الطلاب</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-purple"><i class="fas fa-eye"></i></div>
+                <div class="stat-info">
+                    <h3>{{ courses|length }}</h3>
+                    <p>المشاهدات</p>
+                </div>
+            </div>
+        </div>
+
+        {% if courses %}
+            <div class="courses-grid animate-fade-in-up" style="animation-delay: 0.2s;">
+                {% for course in courses %}
+                    <div class="course-card">
+                        <!-- Image Wrapper -->
+                        <div class="card-image">
+                            {% if course.thumbnail %}
+                                <img src="{{ course.thumbnail.url }}" alt="{{ course.title }}">
+                            {% else %}
+                                <div class="placeholder-img">
+                                    <i class="fas fa-image"></i>
+                                </div>
+                            {% endif %}
+                            <div class="status-badge status-{{ course.status }}">
+                                {{ course.get_status_display }}
+                            </div>
+                        </div>
+
+                        <!-- Content -->
+                        <div class="card-content">
+                            <div class="card-meta">
+                                <span class="badge bg-dark-blue"><i class="fas fa-layer-group"></i> {{ course.get_level_display }}</span>
+                                <span class="badge bg-dark-blue"><i class="fas fa-book"></i> {{ course.subject.subject_name }}</span>
+                            </div>
+
+                            <h3 class="card-title">{{ course.title }}</h3>
+                            <p class="card-desc">{{ course.description|truncatechars:80 }}</p>
+                            
+                            <div class="card-footer">
+                                <div class="students-count">
+                                    <i class="fas fa-user-graduate"></i> {{ course.enrollment_count }} طالب
+                                </div>
+                                <div class="card-actions">
+                                    <a href="{% url 'courses:course_edit' course.course_id %}" class="action-btn edit" title="تعديل">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'courses:lesson_create' course.course_id %}" class="action-btn lesson" title="إضافة درس">
+                                        <i class="fas fa-plus-circle"></i>
+                                    </a>
+                                    <a href="{% url 'courses:course_detail' course.course_id %}" class="action-btn view" title="معاينة">
+                                        <i class="fas fa-external-link-alt"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state animate-fade-in-up">
+                <div class="empty-icon">
+                    <i class="fas fa-rocket"></i>
+                </div>
+                <h3>ابدأ رحلتك التعليمية!</h3>
+                <p>لم تقم بإنشاء أي كورسات بعد. اضغط على الزر في الأعلى لتبدأ.</p>
+            </div>
+        {% endif %}
+
+    </div>
+</section>
+
+<style>
+/* Header Styles */
+.booking-header {
+    background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+    padding: 30px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: white;
+    box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
+}
+
+.header-content h1 { font-size: 1.8rem; margin: 0 0 5px; font-weight: 800; }
+.header-content p { margin: 0; opacity: 0.9; }
+
+.create-btn {
+    background: white;
+    color: #059669;
+    padding: 12px 25px;
+    border-radius: 12px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: 0.3s;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+.create-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+/* Stats Grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 40px;
+}
+
+.stat-card {
+    background: var(--auth-card-bg, #1B1E2D);
+    padding: 20px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    border: 1px solid rgba(255,255,255,0.05);
+    transition: 0.3s;
+}
+.stat-card:hover { transform: translateY(-5px); border-color: rgba(255,255,255,0.1); }
+
+.stat-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+}
+.bg-primary { background: linear-gradient(135deg, #3B82F6, #2563EB); }
+.bg-success { background: linear-gradient(135deg, #10B981, #059669); }
+.bg-purple { background: linear-gradient(135deg, #8B5CF6, #7C3AED); }
+
+.stat-info h3 { margin: 0; font-size: 1.8rem; color: white; font-weight: 700; }
+.stat-info p { margin: 0; color: #9CA3AF; font-size: 0.9rem; }
+
+/* Course Grid */
+.courses-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 25px;
+}
+
+.course-card {
+    background: var(--auth-card-bg, #1B1E2D);
+    border-radius: 20px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.05);
+    transition: 0.3s;
+    display: flex;
+    flex-direction: column;
+}
+.course-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.3);
+    border-color: rgba(255,255,255,0.1);
+}
+
+.card-image {
+    height: 180px;
+    position: relative;
+    background: #000;
+}
+.card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.8;
+    transition: 0.3s;
+}
+.course-card:hover .card-image img { opacity: 1; transform: scale(1.05); }
+
+.placeholder-img {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #2D3748;
+    color: #4A5568;
+    font-size: 3rem;
+}
+
+.status-badge {
+    position: absolute;
+    top: 15px;
+    left: 15px; /* RTL aware: actually right in LTR, let's stick to absolute pos */
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: white;
+    backdrop-filter: blur(5px);
+}
+.status-published { background: rgba(16, 185, 129, 0.9); }
+.status-draft { background: rgba(245, 158, 11, 0.9); }
+.status-archived { background: rgba(107, 114, 128, 0.9); }
+
+.card-content {
+    padding: 20px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.card-meta {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+.badge {
+    font-size: 0.75rem;
+    padding: 4px 10px;
+    border-radius: 8px;
+    color: #D1D5DB;
+}
+.bg-dark-blue { background: rgba(59, 130, 246, 0.15); color: #60A5FA; }
+
+.card-title {
+    color: white;
+    font-size: 1.2rem;
+    margin: 0 0 10px;
+    line-height: 1.4;
+}
+
+.card-desc {
+    color: #9CA3AF;
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+    flex-grow: 1;
+}
+
+.card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    padding-top: 15px;
+}
+
+.students-count {
+    color: #D1D5DB;
+    font-size: 0.9rem;
+}
+.students-count i { color: #10B981; margin-left: 5px; }
+
+.card-actions {
+    display: flex;
+    gap: 10px;
+}
+.action-btn {
+    width: 35px;
+    height: 35px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.05);
+    color: #D1D5DB;
+    transition: 0.3s;
+    text-decoration: none;
+}
+.action-btn:hover { background: #3B82F6; color: white; transform: scale(1.1); }
+.action-btn.edit:hover { background: #F59E0B; }
+.action-btn.lesson:hover { background: #10B981; }
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    background: var(--auth-card-bg, #1B1E2D);
+    border-radius: 20px;
+    border: 1px dashed rgba(255,255,255,0.1);
+}
+.empty-icon {
+    font-size: 4rem;
+    color: #3B82F6;
+    margin-bottom: 20px;
+    opacity: 0.5;
+}
+.empty-state h3 { color: white; margin-bottom: 10px; }
+.empty-state p { color: #9CA3AF; margin-bottom: 0; }
+
+@media (max-width: 768px) {
+    .booking-header { flex-direction: column; text-align: center; gap: 20px; }
+    .courses-grid { grid-template-columns: 1fr; }
+}
+</style>
+{% endblock %}

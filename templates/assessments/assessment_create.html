@@ -1,0 +1,78 @@
+{% extends 'layouts/dashboard_base.html' %}
+
+{% block title %}إنشاء تقييم - EduVerse{% endblock %}
+
+{% block dashboard_content %}
+<section class="dashboard-section" style="max-width: 980px; margin-inline:auto;">
+    <div class="section-header">
+        <div class="section-title"><i class="fas fa-plus-circle"></i> إنشاء تقييم جديد</div>
+        <a href="{% url 'assessments:teacher_assessment_list' %}" class="btn-dash btn-outline-dash">رجوع</a>
+    </div>
+
+    <form method="post" class="assessment-form-grid">
+        {% csrf_token %}
+        <div class="field full">
+            <label for="{{ form.title.id_for_label }}">عنوان التقييم</label>
+            {{ form.title }}
+            {% if form.title.errors %}<small class="err">{{ form.title.errors.0 }}</small>{% endif %}
+        </div>
+        <div class="field">
+            <label for="{{ form.type.id_for_label }}">نوع التقييم</label>
+            {{ form.type }}
+        </div>
+        <div class="field">
+            <label for="{{ form.subject.id_for_label }}">المادة</label>
+            {{ form.subject }}
+        </div>
+        <div class="field full">
+            <label for="{{ form.course.id_for_label }}">الكورس</label>
+            {{ form.course }}
+        </div>
+        <div class="field full">
+            <label for="{{ form.description.id_for_label }}">الوصف</label>
+            {{ form.description }}
+        </div>
+        <div class="field">
+            <label for="{{ form.duration_minutes.id_for_label }}">المدة (دقيقة)</label>
+            {{ form.duration_minutes }}
+        </div>
+        <div class="field">
+            <label for="{{ form.total_points.id_for_label }}">إجمالي النقاط</label>
+            {{ form.total_points }}
+        </div>
+        <div class="field">
+            <label for="{{ form.passing_score.id_for_label }}">نسبة النجاح %</label>
+            {{ form.passing_score }}
+        </div>
+        <div class="field">
+            <label for="{{ form.max_attempts.id_for_label }}">الحد الأقصى للمحاولات</label>
+            {{ form.max_attempts }}
+        </div>
+        <div class="field toggles">
+            <label>{{ form.is_randomized }} خلط الأسئلة عشوائيًا</label>
+            <label>{{ form.show_results_immediately }} عرض النتيجة مباشرة</label>
+        </div>
+        <div class="full" style="display:flex; justify-content:flex-end;">
+            <button type="submit" class="btn-dash btn-primary-dash"><i class="fas fa-save"></i> حفظ ومتابعة</button>
+        </div>
+    </form>
+</section>
+
+<style>
+.assessment-form-grid { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:12px; }
+.assessment-form-grid .field { display:flex; flex-direction:column; gap:7px; }
+.assessment-form-grid .full { grid-column:1/-1; }
+.assessment-form-grid label { color:var(--dash-text-muted); font-size:.9rem; }
+.assessment-form-grid input, .assessment-form-grid select, .assessment-form-grid textarea {
+    background:#0a1324; color:#fff; border:1px solid rgba(100,116,139,.68); border-radius:10px; padding:10px 11px;
+}
+.assessment-form-grid textarea { min-height:110px; }
+.assessment-form-grid input:focus, .assessment-form-grid select:focus, .assessment-form-grid textarea:focus {
+    outline:none; border-color:#38bdf8; box-shadow:0 0 0 4px rgba(56,189,248,.15);
+}
+.toggles { gap:10px; }
+.toggles label { display:flex; align-items:center; gap:8px; color:#dbeafe; }
+.err { color:#f87171; font-size:.82rem; }
+@media (max-width: 780px){ .assessment-form-grid { grid-template-columns:1fr; } }
+</style>
+{% endblock %}

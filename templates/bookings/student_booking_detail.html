@@ -1,0 +1,102 @@
+{% extends 'layouts/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}تفاصيل الحجز - EduVerse{% endblock %}
+
+{% block extra_head %}
+<style>
+.booking-shell { border:1px solid rgba(148,163,184,.14); border-radius:28px; overflow:hidden; background:linear-gradient(180deg, rgba(15,23,42,.96), rgba(17,24,39,.98)); box-shadow:0 24px 48px rgba(2,6,23,.24); }
+.booking-head { padding:24px 28px; background:linear-gradient(135deg, rgba(56,189,248,.18), rgba(34,197,94,.14)); border-bottom:1px solid rgba(255,255,255,.06); }
+.booking-banner { display:flex; justify-content:space-between; gap:16px; align-items:center; padding:16px 18px; margin-top:16px; border-radius:18px; background:rgba(15,23,42,.32); border:1px solid rgba(59,130,246,.18); }
+.countdown-chip { display:inline-flex; align-items:center; gap:8px; padding:10px 14px; border-radius:999px; background:rgba(15,23,42,.48); font-weight:800; }
+.booking-grid { padding:24px 28px; display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:16px; }
+.detail-card { padding:18px; border-radius:20px; background:rgba(15,23,42,.58); border:1px solid rgba(148,163,184,.1); }
+.detail-card strong { display:block; margin-bottom:8px; color:#fff; }
+.detail-card span { color:#dbe7f5; line-height:1.8; }
+.meeting-box { margin:0 28px 24px; padding:18px; border:1px solid rgba(59,130,246,.18); border-radius:20px; background:rgba(59,130,246,.06); }
+.meeting-actions { display:flex; flex-wrap:wrap; gap:12px; margin-top:12px; }
+.footer-actions { padding:0 28px 28px; display:flex; gap:12px; flex-wrap:wrap; }
+@media (max-width: 760px) { .booking-banner, .booking-grid { grid-template-columns:1fr; display:grid; } }
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<section class="dashboard-section">
+    <div class="section-header">
+        <div class="section-title"><i class="fas fa-calendar-check"></i> تفاصيل الحجز</div>
+        <a href="{% url 'bookings:student_booking_list' %}" class="btn-dash btn-outline-dash"><i class="fas fa-arrow-right"></i> العودة</a>
+    </div>
+    <div class="booking-shell">
+        <div class="booking-head">
+            <h3 style="margin:0;">{{ booking.course.title|default:"جلسة خاصة" }}</h3>
+            <div class="booking-banner" data-start="{{ booking.scheduled_start|date:'c' }}" data-end="{{ booking.scheduled_end|date:'c' }}">
+                <div>
+                    <strong>موعد الجلسة</strong>
+                    <span>{{ booking.scheduled_start|date:"Y-m-d" }} عند {{ booking.scheduled_start|time:"H:i" }}</span>
+                </div>
+                <div class="countdown-chip"><i class="fas fa-clock"></i><span class="countdown-text">جاري حساب الوقت المتبقي...</span></div>
+            </div>
+        </div>
+        <div class="booking-grid">
+            <div class="detail-card"><strong>المعلم</strong><span>{{ booking.teacher.user.get_full_name|default:booking.teacher.user.email }}</span></div>
+            <div class="detail-card"><strong>الحالة</strong><span>{{ booking.get_status_display }}</span></div>
+            <div class="detail-card"><strong>البداية</strong><span>{{ booking.scheduled_start|date:"Y-m-d H:i" }}</span></div>
+            <div class="detail-card"><strong>النهاية</strong><span>{{ booking.scheduled_end|date:"Y-m-d H:i" }}</span></div>
+            <div class="detail-card"><strong>المدة</strong><span>{{ booking.duration_minutes }} دقيقة</span></div>
+            <div class="detail-card"><strong>نوع الفصل</strong><span>{{ booking.get_meeting_provider_display }}</span></div>
+            <div class="detail-card"><strong>الملاحظات</strong><span>{{ booking.notes|default:"لا توجد" }}</span></div>
+            <div class="detail-card"><strong>تاريخ الإنشاء</strong><span>{{ booking.created_at|date:"Y-m-d H:i" }}</span></div>
+            {% if booking.cancellation_reason %}
+            <div class="detail-card" style="grid-column:1/-1;"><strong>سبب الإلغاء</strong><span>{{ booking.cancellation_reason }}</span></div>
+            {% endif %}
+        </div>
+        {% if booking.meeting_url %}
+        <div class="meeting-box">
+            <strong style="display:block; margin-bottom:8px;">الفصل المباشر</strong>
+            <span style="color:#dbeafe; line-height:1.9;">الدخول الصحيح للجلسة من داخل المنصة يبدأ من هنا، مع إبقاء الرابط الخارجي فقط كمسار احتياطي.</span>
+            <div class="meeting-actions">
+                <a href="{% url 'bookings:student_live_classroom' booking.booking_id %}" class="btn-dash btn-primary-dash"><i class="fas fa-video"></i> دخول الفصل المباشر</a>
+                <a href="{{ booking.meeting_url }}" target="_blank" rel="noopener" class="btn-dash btn-outline-dash"><i class="fas fa-up-right-from-square"></i> فتح الرابط الخارجي</a>
+            </div>
+        </div>
+        {% endif %}
+        <div class="footer-actions">
+            {% if booking.status == 'pending' or booking.status == 'confirmed' %}
+            <a href="{% url 'bookings:student_cancel_booking' booking.booking_id %}" class="btn-dash btn-outline-dash">إلغاء الحجز</a>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const banner = document.querySelector('.booking-banner');
+    if (!banner) return;
+    const countdownText = banner.querySelector('.countdown-text');
+    const startAt = new Date(banner.dataset.start);
+    const endAt = new Date(banner.dataset.end);
+    function tick() {
+        const now = new Date();
+        const toStart = startAt - now;
+        const toEnd = endAt - now;
+        if (toStart > 0) {
+            const totalSeconds = Math.floor(toStart / 1000);
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+            countdownText.textContent = `متبقي ${hours}س ${minutes}د ${seconds}ث`;
+            return;
+        }
+        if (toEnd > 0) {
+            countdownText.textContent = 'الجلسة بدأت الآن';
+            return;
+        }
+        countdownText.textContent = 'انتهى وقت الجلسة';
+    }
+    tick();
+    setInterval(tick, 1000);
+});
+</script>
+{% endblock %}

@@ -1,0 +1,394 @@
+
+{% extends 'layouts/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}لوحة تحكم الطالب - EduVerse{% endblock %}
+
+{% block dashboard_content %}
+    <!-- Stats Row -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon primary">
+                <i class="fas fa-book-reader"></i>
+            </div>
+            <div class="stat-info">
+                <div class="value">{{ total_sessions|default:"0" }}</div>
+                <div class="label">الجلسات القادمة</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon success">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-info">
+                <div class="value">{{ completed_sessions|default:"0" }}</div>
+                <div class="label">تم إكمالها</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon warning">
+                <i class="fas fa-percentage"></i>
+            </div>
+            <div class="stat-info">
+                <div class="value">85%</div>
+                <div class="label">معدل التقدم</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon accent">
+                <i class="fas fa-wallet"></i>
+            </div>
+            <div class="stat-info">
+                <div class="value">0 ر.س</div>
+                <div class="label">المحفظة</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Sessions Section -->
+    <section class="dashboard-section">
+        <div class="section-header">
+            <div class="section-title">
+                <i class="fas fa-clock"></i>
+                الجلسات القادمة
+            </div>
+            <a href="{% url 'bookings:student_teacher_list' %}" class="btn-dash btn-primary-dash">
+                <i class="fas fa-plus"></i> حجز جديد
+            </a>
+        </div>
+
+        {% if upcoming_sessions %}
+        <table class="dash-table">
+            <thead>
+                <tr>
+                    <th>المعلم</th>
+                    <th>المادة</th>
+                    <th>التاريخ</th>
+                    <th>الوقت</th>
+                    <th>الحالة</th>
+                    <th>إجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for session in upcoming_sessions %}
+                <tr>
+                    <td>{{ session.teacher.user.get_full_name }}</td>
+                    <td>{{ session.course.subject.subject_name }}</td>
+                    <td>{{ session.scheduled_start|date:"Y/m/d" }}</td>
+                    <td>{{ session.scheduled_start|time:"H:i" }}</td>
+                    <td><span class="status-badge status-{{ session.status }}">{{ session.get_status_display }}</span></td>
+                    <td>
+                        <a href="{% url 'bookings:student_booking_detail' session.booking_id %}" class="btn-dash btn-outline-dash" style="padding: 5px 10px; font-size: 0.8rem;">التفاصيل</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div style="text-align: center; padding: 40px; color: var(--dash-text-muted);">
+            <i class="fas fa-calendar-times" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.5;"></i>
+            <p>لا توجد جلسات قادمة حالياً</p>
+            <a href="{% url 'bookings:student_teacher_list' %}" class="btn-dash btn-outline-dash" style="margin-top: 15px;">تصفح المعلمين</a>
+        </div>
+        {% endif %}
+    </section>
+
+    <!-- My Courses Section -->
+    <section class="dashboard-section">
+        <div class="section-header">
+            <div class="section-title">
+                <i class="fas fa-play-circle"></i>
+                اخر الكورسات
+            </div>
+             <a href="{% url 'courses:course_list' %}" class="btn-dash btn-outline-dash" style="font-size: 0.85rem;">عرض الكل</a>
+        </div>
+        
+        <div class="courses-grid">
+            {% for course in latest_courses %}
+            <div class="course-card" data-dashboard-course-card data-course-id="{{ course.course_id }}">
+                <!-- Thumbnail with Video Preview -->
+                <div class="course-thumbnail" data-hover-video-card>
+                    {% if course.thumbnail %}
+                        <img src="{{ course.thumbnail.url }}" alt="{{ course.title }}" class="thumbnail-img">
+                    {% else %}
+                        <div class="thumbnail-placeholder">
+                            <i class="fas fa-image"></i>
+                        </div>
+                    {% endif %}
+                    
+                    {% if course.preview_video %}
+                        <video class="preview-video" muted playsinline preload="metadata">
+                            <source src="{{ course.preview_video.url }}" type="video/mp4">
+                        </video>
+                        <span class="course-video-badge"><i class="fas fa-play"></i> معاينة</span>
+                        <button type="button" class="course-audio-indicator" data-audio-toggle aria-label="تبديل الصوت">
+                            <i class="fas fa-volume-xmark"></i>
+                        </button>
+                    {% endif %}
+
+                    <span class="course-duration">{{ course.duration_minutes }} min</span>
+                </div>
+
+                <div class="course-content">
+                    <h3 class="course-title">
+                        <a href="{% url 'courses:course_detail' course.course_id %}">{{ course.title }}</a>
+                    </h3>
+                    <div class="course-meta">
+                        <span class="course-level">{{ course.get_level_display }}</span>
+                        {% if course.price > 0 %}
+                            <span class="course-price price-paid">{{ course.price }} {{ course.currency }}</span>
+                        {% else %}
+                            <span class="course-price price-free">مجاني</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div data-dashboard-empty-state style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--dash-text-muted);">
+                <p>لا توجد كورسات متاحة حالياً.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <style>
+        .courses-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 16px;
+        }
+        .course-card {
+            background: linear-gradient(165deg, rgba(19, 35, 61, 0.95), rgba(10, 22, 40, 0.95));
+            border: 1px solid var(--dash-border);
+            border-radius: 14px;
+            overflow: hidden;
+            transition: transform 0.24s ease, box-shadow 0.24s ease, border-color 0.24s ease;
+        }
+        .course-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 14px 28px rgba(14, 165, 233, 0.22);
+            border-color: rgba(125, 211, 252, 0.75);
+        }
+        .course-thumbnail {
+            position: relative;
+            height: 170px;
+            background: #020916;
+            overflow: hidden;
+        }
+        .course-thumbnail::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(1, 7, 18, 0.82), rgba(1, 7, 18, 0.12));
+            z-index: 3;
+            pointer-events: none;
+        }
+        .thumbnail-img, .preview-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .preview-video {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            z-index: 2;
+            pointer-events: none;
+            transition: transform 0.28s ease, opacity 0.18s ease;
+        }
+        .course-thumbnail.is-previewing .preview-video {
+            opacity: 0.72;
+            transform: scale(1.03);
+        }
+        .course-thumbnail.is-previewing .thumbnail-img {
+            opacity: 0.5;
+        }
+        .thumbnail-placeholder {
+            width: 100%;
+            height: 100%;
+            display: grid;
+            place-items: center;
+            color: rgba(255,255,255,0.2);
+            font-size: 2rem;
+        }
+        .course-duration {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.75);
+            color: #fff;
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 0.75rem;
+            z-index: 4;
+            direction: ltr;
+        }
+        .course-video-badge {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(14, 165, 233, 0.9);
+            color: #fff;
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            z-index: 4;
+        }
+        .course-audio-indicator {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            z-index: 5;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,.16);
+            background: rgba(2, 6, 23, 0.78);
+            color: #fff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            backdrop-filter: blur(8px);
+        }
+        .course-content {
+            padding: 14px;
+        }
+        .course-title {
+            margin: 0 0 10px;
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+        .course-title a {
+            color: var(--dash-text);
+            text-decoration: none;
+        }
+        .course-title a:hover {
+            color: var(--dash-primary);
+        }
+        .course-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: var(--dash-text-muted);
+        }
+        .price-paid { color: #f59e0b; font-weight: 700; }
+        .price-free { color: #10b981; font-weight: 700; }
+    </style>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const coursesGrid = document.querySelector('.courses-grid');
+        if (!coursesGrid) return;
+
+        function escapeHtml(value) {
+            return String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function bindHoverPreview(scope) {
+            scope.querySelectorAll('[data-hover-video-card]').forEach(function(card) {
+                if (card.dataset.hoverBound === 'true') return;
+                card.dataset.hoverBound = 'true';
+                const video = card.querySelector('.preview-video');
+                const toggle = card.querySelector('[data-audio-toggle]');
+                if (!video) return;
+
+                const setAudioIcon = function() {
+                    if (!toggle) return;
+                    toggle.innerHTML = video.muted ? '<i class="fas fa-volume-xmark"></i>' : '<i class="fas fa-volume-high"></i>';
+                };
+
+                const startPreview = function() {
+                    card.classList.add('is-previewing');
+                    video.currentTime = 0;
+                    const playPromise = video.play();
+                    if (playPromise && typeof playPromise.catch === 'function') {
+                        playPromise.catch(function() {});
+                    }
+                };
+
+                const stopPreview = function() {
+                    video.pause();
+                    video.currentTime = 0;
+                    video.muted = true;
+                    setAudioIcon();
+                    card.classList.remove('is-previewing');
+                };
+
+                card.addEventListener('mouseenter', startPreview);
+                card.addEventListener('mouseleave', stopPreview);
+
+                if (toggle) {
+                    toggle.addEventListener('click', function(event) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        video.muted = !video.muted;
+                        setAudioIcon();
+                        if (!card.classList.contains('is-previewing')) {
+                            startPreview();
+                        }
+                    });
+                    setAudioIcon();
+                }
+            });
+        }
+
+        function buildCourseCard(course) {
+            const thumbnail = course.thumbnail_url
+                ? `<img src="${escapeHtml(course.thumbnail_url)}" alt="${escapeHtml(course.title)}" class="thumbnail-img">`
+                : `<div class="thumbnail-placeholder"><i class="fas fa-image"></i></div>`;
+            const preview = course.preview_video_url
+                ? `
+                    <video class="preview-video" muted playsinline preload="metadata">
+                        <source src="${escapeHtml(course.preview_video_url)}" type="video/mp4">
+                    </video>
+                    <span class="course-video-badge"><i class="fas fa-play"></i> معاينة</span>
+                    <button type="button" class="course-audio-indicator" data-audio-toggle aria-label="تبديل الصوت">
+                        <i class="fas fa-volume-xmark"></i>
+                    </button>
+                  `
+                : '';
+
+            return `
+                <div class="course-card" data-dashboard-course-card data-course-id="${course.id}">
+                    <div class="course-thumbnail" data-hover-video-card>
+                        ${thumbnail}
+                        ${preview}
+                        <span class="course-duration">${course.duration_minutes || 0} min</span>
+                    </div>
+                    <div class="course-content">
+                        <h3 class="course-title">
+                            <a href="${escapeHtml(course.detail_url)}">${escapeHtml(course.title)}</a>
+                        </h3>
+                        <div class="course-meta">
+                            <span class="course-level">${escapeHtml(course.level_display || '')}</span>
+                            ${course.price > 0 ? `<span class="course-price price-paid">${course.price} ${escapeHtml(course.currency || '')}</span>` : '<span class="course-price price-free">مجاني</span>'}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        bindHoverPreview(coursesGrid);
+
+        window.addEventListener('eduverse:notification', function(event) {
+            const payload = event.detail || {};
+            if (payload.type !== 'course_published' || !payload.course) return;
+            if (coursesGrid.querySelector(`[data-course-id="${payload.course.id}"]`)) return;
+            const emptyState = coursesGrid.querySelector('[data-dashboard-empty-state]');
+            if (emptyState) emptyState.remove();
+            coursesGrid.insertAdjacentHTML('afterbegin', buildCourseCard(payload.course));
+            bindHoverPreview(coursesGrid);
+        });
+    });
+    </script>
+{% endblock %}

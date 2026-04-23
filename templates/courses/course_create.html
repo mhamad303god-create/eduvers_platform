@@ -1,0 +1,356 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}إنشاء كورس جديد - EduVerse{% endblock %}
+
+{% block content %}
+<section class="course-create-page">
+    <div class="course-create-bg-shape shape-a"></div>
+    <div class="course-create-bg-shape shape-b"></div>
+    <div class="course-create-container">
+        <header class="course-create-header reveal-on-scroll">
+            <div>
+                <span class="course-create-badge"><i class="fas fa-star"></i> استوديو صناعة المحتوى</span>
+                <h1>أنشئ كورسك باحتراف</h1>
+                <p>نظّم المحتوى، اضبط النشر، ثم ابدأ مشاركة خبرتك مع الطلاب.</p>
+            </div>
+            <a href="{% url 'courses:teacher_course_list' %}" class="course-create-back">
+                <i class="fas fa-arrow-left"></i>
+                العودة إلى كورساتي
+            </a>
+        </header>
+
+        <form method="post" enctype="multipart/form-data" class="course-create-form reveal-on-scroll" data-validate="true">
+            {% csrf_token %}
+
+            <section class="form-panel">
+                <h2><i class="fas fa-info-circle"></i> المعلومات الأساسية</h2>
+                <div class="field-grid">
+                    <div class="field full">
+                        <label for="{{ form.title.id_for_label }}">عنوان الكورس</label>
+                        {{ form.title }}
+                        {% if form.title.errors %}<small class="field-error-msg">{{ form.title.errors.0 }}</small>{% endif %}
+                    </div>
+                    <div class="field">
+                        <label for="{{ form.subject.id_for_label }}">المادة</label>
+                        {{ form.subject }}
+                        {% if form.subject.errors %}<small class="field-error-msg">{{ form.subject.errors.0 }}</small>{% endif %}
+                    </div>
+                    <div class="field">
+                        <label for="{{ form.level.id_for_label }}">المستوى</label>
+                        {{ form.level }}
+                        {% if form.level.errors %}<small class="field-error-msg">{{ form.level.errors.0 }}</small>{% endif %}
+                    </div>
+                    <div class="field full">
+                        <label for="{{ form.description.id_for_label }}">وصف الكورس</label>
+                        {{ form.description }}
+                        {% if form.description.errors %}<small class="field-error-msg">{{ form.description.errors.0 }}</small>{% endif %}
+                    </div>
+                </div>
+            </section>
+
+            <section class="form-panel">
+                <h2><i class="fas fa-sliders-h"></i> النشر والتسعير</h2>
+                <div class="field-grid">
+                    <div class="field">
+                        <label for="{{ form.course_type.id_for_label }}">نوع الكورس</label>
+                        {{ form.course_type }}
+                        {% if form.course_type.errors %}<small class="field-error-msg">{{ form.course_type.errors.0 }}</small>{% endif %}
+                    </div>
+                    {% if form.status.is_hidden %}
+                        {{ form.status }}
+                    {% else %}
+                        <div class="field">
+                            <label for="{{ form.status.id_for_label }}">حالة النشر</label>
+                            {{ form.status }}
+                            <small class="field-hint">اختر "Published" لإظهار الكورس مباشرة للطلاب.</small>
+                            {% if form.status.errors %}<small class="field-error-msg">{{ form.status.errors.0 }}</small>{% endif %}
+                        </div>
+                    {% endif %}
+                    <div class="field">
+                        <label for="{{ form.price.id_for_label }}">السعر</label>
+                        {{ form.price }}
+                        {% if form.price.errors %}<small class="field-error-msg">{{ form.price.errors.0 }}</small>{% endif %}
+                    </div>
+                    <div class="field">
+                        <label for="{{ form.currency.id_for_label }}">العملة</label>
+                        {{ form.currency }}
+                        {% if form.currency.errors %}<small class="field-error-msg">{{ form.currency.errors.0 }}</small>{% endif %}
+                    </div>
+                    <div class="field">
+                        <label for="{{ form.duration_minutes.id_for_label }}">المدة بالدقائق</label>
+                        {{ form.duration_minutes }}
+                        {% if form.duration_minutes.errors %}<small class="field-error-msg">{{ form.duration_minutes.errors.0 }}</small>{% endif %}
+                    </div>
+                    <div class="field">
+                        <label for="{{ form.max_students.id_for_label }}">الحد الأقصى للطلاب</label>
+                        {{ form.max_students }}
+                        {% if form.max_students.errors %}<small class="field-error-msg">{{ form.max_students.errors.0 }}</small>{% endif %}
+                    </div>
+                </div>
+            </section>
+
+            <section class="form-panel">
+                <h2><i class="fas fa-photo-video"></i> الوسائط والأهداف</h2>
+                <div class="field-grid">
+                    <div class="field">
+                        <label for="{{ form.thumbnail.id_for_label }}">صورة الغلاف</label>
+                        {{ form.thumbnail }}
+                        {% if form.thumbnail.errors %}<small class="field-error-msg">{{ form.thumbnail.errors.0 }}</small>{% endif %}
+                    </div>
+                    <div class="field">
+                        <label for="{{ form.preview_video.id_for_label }}">الفيديو التعريفي</label>
+                        {{ form.preview_video }}
+                        <small class="field-hint">تم توسيع دعم اسم الملف الطويل ومعالجة الرفع.</small>
+                        {% if form.preview_video.errors %}<small class="field-error-msg">{{ form.preview_video.errors.0 }}</small>{% endif %}
+                    </div>
+                    <div class="field full">
+                        <label for="{{ form.objectives.id_for_label }}">الأهداف التعليمية</label>
+                        {{ form.objectives }}
+                        <small class="field-hint">اكتب كل هدف في سطر جديد.</small>
+                        {% if form.objectives.errors %}<small class="field-error-msg">{{ form.objectives.errors.0 }}</small>{% endif %}
+                    </div>
+                </div>
+            </section>
+
+            <div class="form-actions">
+                <button type="submit" class="btn-create">
+                    <i class="fas fa-rocket"></i> إنشاء الكورس
+                </button>
+                <a href="{% url 'courses:teacher_course_list' %}" class="btn-cancel">إلغاء</a>
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+.course-create-page {
+    min-height: calc(100vh - 80px);
+    padding: 36px 16px 56px;
+    position: relative;
+    overflow: hidden;
+}
+
+.course-create-bg-shape {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(60px);
+    opacity: 0.28;
+    pointer-events: none;
+}
+
+.shape-a {
+    width: 320px;
+    height: 320px;
+    background: #14b8a6;
+    top: -80px;
+    left: -80px;
+}
+
+.shape-b {
+    width: 420px;
+    height: 420px;
+    background: #2563eb;
+    bottom: -120px;
+    right: -100px;
+}
+
+.course-create-container {
+    max-width: 1080px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 2;
+}
+
+.course-create-header {
+    background: linear-gradient(120deg, #0f766e 0%, #1d4ed8 55%, #0ea5e9 100%);
+    border-radius: 24px;
+    padding: 30px;
+    color: #fff;
+    box-shadow: 0 24px 48px rgba(29, 78, 216, 0.32);
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.course-create-header h1 {
+    margin: 8px 0 8px;
+    font-size: clamp(1.6rem, 2.6vw, 2.2rem);
+}
+
+.course-create-header p {
+    margin: 0;
+    opacity: 0.92;
+}
+
+.course-create-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 0.9rem;
+}
+
+.course-create-back {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #fff;
+    padding: 12px 18px;
+    border-radius: 12px;
+    text-decoration: none;
+    font-weight: 700;
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+    transition: all 0.25s ease;
+}
+
+.course-create-back:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.28);
+}
+
+.course-create-form {
+    background: var(--card-color);
+    border: 1px solid var(--border-color);
+    border-radius: 24px;
+    padding: 24px;
+    box-shadow: 0 26px 54px rgba(2, 6, 23, 0.2);
+}
+
+.form-panel {
+    background: rgba(148, 163, 184, 0.06);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 18px;
+    padding: 18px;
+    margin-bottom: 16px;
+}
+
+.form-panel h2 {
+    margin: 0 0 14px;
+    font-size: 1.15rem;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    color: var(--text-color);
+}
+
+.form-panel h2 i {
+    color: #0ea5e9;
+}
+
+.field-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.field.full {
+    grid-column: 1 / -1;
+}
+
+.field label {
+    display: block;
+    margin-bottom: 7px;
+    color: var(--text-color);
+    font-weight: 700;
+    font-size: 0.95rem;
+}
+
+.field input,
+.field textarea,
+.field select {
+    width: 100%;
+    border: 1px solid var(--border-color);
+    background: var(--bg-color);
+    color: var(--text-color);
+    border-radius: 12px;
+    padding: 12px 13px;
+    font-family: inherit;
+    transition: all 0.2s ease;
+}
+
+.field textarea {
+    min-height: 110px;
+    resize: vertical;
+}
+
+.field input:focus,
+.field textarea:focus,
+.field select:focus {
+    outline: none;
+    border-color: #0ea5e9;
+    box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.16);
+}
+
+.field-hint {
+    display: block;
+    margin-top: 6px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.field-error-msg {
+    display: block;
+    margin-top: 6px;
+    color: #ef4444;
+    font-size: 0.82rem;
+}
+
+.form-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 18px;
+}
+
+.btn-create {
+    border: 0;
+    border-radius: 12px;
+    padding: 12px 24px;
+    color: #fff;
+    font-weight: 800;
+    background: linear-gradient(120deg, #0f766e 0%, #1d4ed8 100%);
+    box-shadow: 0 12px 24px rgba(29, 78, 216, 0.35);
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.btn-create:hover {
+    transform: translateY(-2px);
+}
+
+.btn-cancel {
+    text-decoration: none;
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    border-radius: 12px;
+    padding: 12px 18px;
+}
+
+@media (max-width: 860px) {
+    .course-create-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .field-grid {
+        grid-template-columns: 1fr;
+    }
+    .form-actions {
+        flex-direction: column;
+    }
+    .btn-create,
+    .btn-cancel {
+        width: 100%;
+        text-align: center;
+    }
+}
+</style>
+{% endblock %}

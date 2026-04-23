@@ -1,0 +1,113 @@
+{% extends 'layouts/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}تفاصيل الرسالة - EduVerse{% endblock %}
+
+{% block extra_head %}
+<style>
+.message-shell { border:1px solid var(--dash-border); border-radius:26px; overflow:hidden; background:linear-gradient(180deg, rgba(15,23,42,.96), rgba(17,24,39,.98)); box-shadow:0 24px 48px rgba(2,6,23,.24); }
+.message-hero { padding:24px 28px; display:flex; justify-content:space-between; gap:18px; align-items:flex-start; background:linear-gradient(135deg, rgba(59,130,246,.2), rgba(45,212,191,.2)); border-bottom:1px solid rgba(255,255,255,.06); }
+.message-hero h3 { margin:0 0 8px; font-size:1.35rem; }
+.message-hero p { margin:0; color:var(--dash-text-muted); }
+.message-date { white-space:nowrap; color:#dbeafe; font-weight:800; }
+.message-grid { padding:24px 28px 0; display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:16px; }
+.message-meta-card { padding:18px; border-radius:18px; background:rgba(15,23,42,.62); border:1px solid rgba(96,165,250,.16); display:grid; gap:6px; }
+.meta-label { color:var(--dash-text-muted); font-size:.9rem; }
+.message-content-box { margin:24px 28px; padding:22px; border-radius:22px; background:rgba(59,130,246,.06); border:1px solid rgba(59,130,246,.14); white-space:pre-line; line-height:2; }
+.message-attachments { margin:0 28px 28px; padding:18px; border-radius:18px; background:rgba(15,23,42,.62); border:1px solid rgba(96,165,250,.16); }
+.attachment-file-card { margin-top:14px; padding:18px; border-radius:18px; background:rgba(16,185,129,.08); border:1px solid rgba(16,185,129,.16); display:flex; justify-content:space-between; gap:14px; align-items:center; flex-wrap:wrap; }
+.attachment-file-preview { max-width:220px; border-radius:16px; overflow:hidden; border:1px solid rgba(255,255,255,.08); }
+.attachment-file-preview img { display:block; width:100%; height:auto; }
+@media (max-width: 800px) {
+    .message-hero { display:grid; }
+    .message-grid { grid-template-columns:1fr; }
+    .message-date { white-space:normal; }
+}
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<section class="dashboard-section">
+    <div class="section-header">
+        <div class="section-title"><i class="fas fa-envelope-open-text"></i> تفاصيل الرسالة</div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <a href="{% if request.user == message.sender %}{% url 'notifications:sent_messages' %}{% else %}{% url 'notifications:message_list' %}{% endif %}" class="btn-dash btn-outline-dash">
+                <i class="fas fa-arrow-right"></i> العودة
+            </a>
+            <a href="{% url 'notifications:reply_message' message.message_id %}" class="btn-dash btn-primary-dash">
+                <i class="fas fa-reply"></i> رد على الرسالة
+            </a>
+            <a href="{% url 'notifications:forward_message' message.message_id %}" class="btn-dash btn-outline-dash">
+                <i class="fas fa-share"></i> إعادة إرسال
+            </a>
+            {% if message.attachment_file %}
+            <a href="{% url 'notifications:download_message_attachment' message.message_id %}" class="btn-dash btn-outline-dash">
+                <i class="fas fa-download"></i> تنزيل المرفق
+            </a>
+            {% endif %}
+            <form method="post" action="{% url 'notifications:delete_message' message.message_id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn-dash btn-outline-dash" style="color:#fecaca; border-color:rgba(248,113,113,.24);">
+                    <i class="fas fa-trash"></i> حذف من قائمتي
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="message-shell">
+        <div class="message-hero">
+            <div>
+                <h3>{{ message.subject|default:"بدون موضوع" }}</h3>
+                <p>هذه الرسالة وصلت إلى حسابك مع إشعار، ويمكنك الرد عليها مباشرة من هنا.</p>
+            </div>
+            <div class="message-date">{{ message.created_at|date:"Y-m-d H:i" }}</div>
+        </div>
+        <div class="message-grid">
+            <div class="message-meta-card">
+                <span class="meta-label">المرسل</span>
+                <strong>{{ message.sender.get_full_name|default:message.sender.email }}</strong>
+                <small>{{ message.sender.email }}</small>
+            </div>
+            <div class="message-meta-card">
+                <span class="meta-label">الموضوع</span>
+                <strong>{{ message.subject|default:"بدون موضوع" }}</strong>
+                <small>معرّف الرسالة: #{{ message.message_id }}</small>
+            </div>
+        </div>
+        <div class="message-content-box">{{ message.content }}</div>
+        {% if message.attachment_file %}
+        <div class="message-attachments">
+            <strong>الملف المرفق</strong>
+            <div class="attachment-file-card">
+                <div>
+                    <div style="font-weight:800; color:#fff;">{{ message.attachment_file.name|cut:"messages/attachments/" }}</div>
+                    <div style="color:#cbd5e1; margin-top:6px;">هذا الملف مرفق داخل الرسالة نفسها ويمكن فتحه مباشرة.</div>
+                </div>
+                <a href="{% url 'notifications:download_message_attachment' message.message_id %}" class="btn-dash btn-primary-dash">
+                    <i class="fas fa-download"></i> تنزيل الملف
+                </a>
+            </div>
+            {% with file_name=message.attachment_file.name|lower %}
+                {% if '.jpg' in file_name or '.jpeg' in file_name or '.png' in file_name or '.webp' in file_name or '.gif' in file_name %}
+                <div class="attachment-file-preview" style="margin-top:14px;">
+                    <img src="{{ message.attachment_file.url }}" alt="معاينة المرفق">
+                </div>
+                {% endif %}
+            {% endwith %}
+        </div>
+        {% endif %}
+        {% if message.attachment_urls %}
+        <div class="message-attachments">
+            <strong>روابط المرفقات</strong>
+            <div style="display:grid; gap:10px; margin-top:12px;">
+                {% for attachment_url in message.attachment_urls %}
+                <a href="{{ attachment_url }}" target="_blank" rel="noopener" download class="btn-dash btn-outline-dash" style="justify-content:flex-start;">
+                    <i class="fas fa-link"></i> {{ attachment_url }}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

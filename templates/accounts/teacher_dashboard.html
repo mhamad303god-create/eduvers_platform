@@ -1,0 +1,143 @@
+{% extends 'layouts/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}لوحة تحكم المعلم - EduVerse{% endblock %}
+
+{% block dashboard_content %}
+    <!-- Stats Row -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon primary">
+                <i class="fas fa-chalkboard"></i>
+            </div>
+            <div class="stat-info">
+                <div class="value">{{ total_courses|default:"0" }}</div>
+                <div class="label">كورساتي</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon success">
+                <i class="fas fa-user-graduate"></i>
+            </div>
+            <div class="stat-info">
+                <div class="value">{{ total_students|default:"0" }}</div>
+                <div class="label">الطلاب</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon warning">
+                <i class="fas fa-star"></i>
+            </div>
+            <div class="stat-info">
+                <div class="value">4.9</div>
+                <div class="label">التقييم</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon accent">
+                <i class="fas fa-dollar-sign"></i>
+            </div>
+            <div class="stat-info">
+                <div class="value">1250 ر.س</div>
+                <div class="label">الأرباح الشهرية</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions Row -->
+    <div style="display: flex; gap: 15px; margin-bottom: 30px;">
+        <a href="{% url 'courses:course_create' %}" class="btn-dash btn-primary-dash">
+            <i class="fas fa-plus"></i> دورة جديدة
+        </a>
+        <a href="{% url 'bookings:teacher_availability_create' %}" class="btn-dash btn-outline-dash">
+            <i class="fas fa-calendar-alt"></i> جدولة جلسة
+        </a>
+        <a href="#" class="btn-dash btn-outline-dash" onclick="alert('المراسلات ستكون متاحة قريباً!')">
+            <i class="fas fa-envelope"></i> رسالة جماعية
+        </a>
+    </div>
+
+    <!-- Active Courses Section -->
+    <section class="dashboard-section">
+        <div class="section-header">
+            <div class="section-title">
+                <i class="fas fa-layer-group"></i>
+                دوراتك النشطة
+            </div>
+            <a href="{% url 'courses:teacher_course_list' %}" class="btn-dash btn-outline-dash" style="font-size: 0.85rem;">عرض الكل</a>
+        </div>
+
+        {% if courses %}
+        <table class="dash-table">
+            <thead>
+                <tr>
+                    <th>اسم الدورة</th>
+                    <th>عدد الطلاب</th>
+                    <th>الحالة</th>
+                    <th>الأرباح</th>
+                    <th>الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for course in courses %}
+                <tr>
+                    <td>{{ course.title }}</td>
+                    <td>{{ course.students_count }} طالب</td>
+                    <td><span class="status-badge status-active">نشط</span></td>
+                    <td>{{ course.revenue }} ر.س</td>
+                    <td>
+                        <a href="{% url 'courses:course_edit' course.course_id %}" class="btn-dash btn-outline-dash" style="padding: 5px 10px; font-size: 0.8rem;">إدارة</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div style="text-align: center; padding: 40px; color: var(--dash-text-muted);">
+            <i class="fas fa-box-open" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.5;"></i>
+            <p>لم تقم بإنشاء أي دورات بعد</p>
+            <a href="{% url 'courses:course_create' %}" class="btn-dash btn-primary-dash" style="margin-top: 15px;">أنشئ دورتك الأولى</a>
+        </div>
+        {% endif %}
+    </section>
+
+    <!-- Recent Bookings -->
+    <section class="dashboard-section">
+        <div class="section-header">
+            <div class="section-title">
+                <i class="fas fa-calendar-check"></i>
+                طلبات الحجز الأخيرة
+            </div>
+        </div>
+        
+        {% if upcoming_bookings %}
+            <!-- Table similar to student dashboard but for teacher view -->
+             <table class="dash-table">
+                <thead>
+                    <tr>
+                        <th>الطالب</th>
+                        <th>الموضوع</th>
+                        <th>التاريخ</th>
+                        <th>الإجراء</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for booking in upcoming_bookings %}
+                    <tr>
+                        <td>{{ booking.student.user.get_full_name }}</td>
+                        <td>{{ booking.course.subject.subject_name }}</td>
+                        <td>{{ booking.scheduled_start|date:"d M H:i" }}</td>
+                        <td>
+                            <a href="{% url 'bookings:confirm_booking' booking.booking_id %}" class="btn-dash btn-primary-dash" style="padding: 4px 10px; font-size: 0.8rem;">قبول</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+             </table>
+        {% else %}
+            <div style="text-align: center; color: var(--dash-text-muted); padding: 20px;">
+                لا توجد طلبات حجز معلقة
+            </div>
+        {% endif %}
+    </section>
+{% endblock %}

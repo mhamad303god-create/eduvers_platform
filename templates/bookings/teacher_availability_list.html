@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}إدارة التوفر - EduVerse{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1>إدارة التوفر</h1>
+        <a href="{% url 'bookings:teacher_availability_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> إضافة توفر جديد
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h3>قائمة التوفر</h3>
+        </div>
+        <div class="card-body">
+            {% if availabilities %}
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>اليوم</th>
+                                <th>وقت البداية</th>
+                                <th>وقت النهاية</th>
+                                <th>المنطقة الزمنية</th>
+                                <th>متكرر</th>
+                                <th>الحالة</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for availability in availabilities %}
+                                <tr>
+                                    <td>{{ availability.get_day_of_week_display }}</td>
+                                    <td>{{ availability.start_time }}</td>
+                                    <td>{{ availability.end_time }}</td>
+                                    <td>{{ availability.timezone }}</td>
+                                    <td>
+                                        {% if availability.is_recurring %}
+                                            <span class="badge badge-success">نعم</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">لا</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-{{ availability.status }}">{{ availability.get_status_display }}</span>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'bookings:teacher_availability_edit' availability.availability_id %}" class="btn btn-sm btn-warning">
+                                            <i class="fas fa-edit"></i> تعديل
+                                        </a>
+                                        <a href="{% url 'bookings:teacher_availability_delete' availability.availability_id %}" class="btn btn-sm btn-danger">
+                                            <i class="fas fa-trash"></i> حذف
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-center">لا توجد أوقات توفر محددة.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}

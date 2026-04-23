@@ -1,0 +1,107 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}EduVerse - منصة التعليم الذكية{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    {% block extra_head %}{% endblock %}
+</head>
+<body data-theme="light">
+    <!-- Theme Toggle Button -->
+    <button class="theme-toggle" id="themeToggle">
+        <i class="fas fa-moon" id="themeIcon"></i>
+        <span id="themeText">الوضع الداكن</span>
+    </button>
+
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loader">
+            <div class="loader-circle"></div>
+            <div class="loader-circle"></div>
+            <div class="loader-circle"></div>
+            <div class="loader-text">EduVerse</div>
+        </div>
+    </div>
+
+    <!-- Main Content (Full Screen) -->
+    <main class="auth-main">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- <script src="{% static 'js/script.js' %}"></script> -->
+    <script>
+    // إخفاء شاشة التحميل بعد تحميل الصفحة
+    document.addEventListener('DOMContentLoaded', function() {
+        var loadingScreen = document.getElementById('loadingScreen');
+        if (loadingScreen) {
+            loadingScreen.style.display = 'none';
+        }
+
+        // تفعيل زر تغيير الثيم
+        var themeToggle = document.getElementById('themeToggle');
+        var themeIcon = document.getElementById('themeIcon');
+        var themeText = document.getElementById('themeText');
+        var body = document.body;
+        // استرجاع الثيم من localStorage
+        var savedTheme = localStorage.getItem('eduverse-theme');
+        if (savedTheme === 'dark') {
+            body.setAttribute('data-theme', 'dark');
+            if (themeIcon) themeIcon.classList.replace('fa-moon', 'fa-sun');
+            if (themeText) themeText.textContent = 'الوضع الفاتح';
+        } else {
+            body.setAttribute('data-theme', 'light');
+            if (themeIcon) themeIcon.classList.replace('fa-sun', 'fa-moon');
+            if (themeText) themeText.textContent = 'الوضع الداكن';
+        }
+        if (themeToggle) {
+            themeToggle.addEventListener('click', function() {
+                var currentTheme = body.getAttribute('data-theme');
+                if (currentTheme === 'light') {
+                    body.setAttribute('data-theme', 'dark');
+                    localStorage.setItem('eduverse-theme', 'dark');
+                    if (themeIcon) themeIcon.classList.replace('fa-moon', 'fa-sun');
+                    if (themeText) themeText.textContent = 'الوضع الفاتح';
+                } else {
+                    body.setAttribute('data-theme', 'light');
+                    localStorage.setItem('eduverse-theme', 'light');
+                    if (themeIcon) themeIcon.classList.replace('fa-sun', 'fa-moon');
+                    if (themeText) themeText.textContent = 'الوضع الداكن';
+                }
+            });
+        }
+    });
+    </script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        {% if messages %}
+            {% for message in messages %}
+                Toastify({
+                    text: "{{ message|escapejs }}",
+                    duration: 5000,
+                    close: true,
+                    gravity: "top",
+                    position: "left",
+                    stopOnFocus: true,
+                    style: {
+                        background: "{% if 'error' in message.tags or 'danger' in message.tags %}linear-gradient(120deg, #dc2626, #f97316){% elif 'success' in message.tags %}linear-gradient(120deg, #059669, #0ea5e9){% elif 'warning' in message.tags %}linear-gradient(120deg, #d97706, #f59e0b){% else %}linear-gradient(120deg, #0284c7, #2563eb){% endif %}",
+                        borderRadius: "14px",
+                        fontFamily: "'Cairo', sans-serif",
+                        fontWeight: "700",
+                        boxShadow: "0 12px 24px rgba(2,6,23,0.2)"
+                    }
+                }).showToast();
+            {% endfor %}
+        {% endif %}
+    });
+    </script>
+    {% block extra_js %}{% endblock %}
+    
+</body>
+</html>
+

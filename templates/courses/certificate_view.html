@@ -1,0 +1,409 @@
+{% extends 'layouts/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}My Certificate - {{ certificate.enrollment.course.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.certificate-container {
+    max-width: 1000px;
+    margin: 40px auto;
+    padding: 0 20px;
+}
+
+.certificate-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.certificate-header h1 {
+    font-size: 36px;
+    font-weight: 800;
+    margin-bottom: 15px;
+}
+
+.certificate-header p {
+    font-size: 16px;
+    color: var(--text-secondary);
+}
+
+.certificate-preview-card {
+    background: var(--card-color);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-premium);
+    overflow: hidden;
+    margin-bottom: 30px;
+}
+
+.certificate-image-wrapper {
+    width: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.certificate-preview {
+    width: 100%;
+    max-width: 800px;
+    background: white;
+    border-radius: var(--radius-md);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    padding: 60px 40px;
+    position: relative;
+}
+
+.certificate-border {
+    border: 8px double #1a73e8;
+    padding: 40px;
+    position: relative;
+}
+
+.certificate-badge {
+    position: absolute;
+    top: 30px;
+    right: 30px;
+    width: 80px;
+    height: 80px;
+    background: var(--primary-gradient);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 36px;
+    box-shadow: 0 4px 15px rgba(26, 115, 232, 0.4);
+}
+
+.certificate-title {
+    text-align: center;
+    font-size: 42px;
+    font-weight: 800;
+    color: #1a73e8;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.certificate-subtitle {
+    text-align: center;
+    font-size: 18px;
+    color: #666;
+    margin-bottom: 30px;
+}
+
+.certificate-student-name {
+    text-align: center;
+    font-size: 36px;
+    font-weight: 700;
+    color: #333;
+    margin: 30px 0;
+    text-decoration: underline;
+    text-decoration-color: #1a73e8;
+    text-decoration-thickness: 2px;
+}
+
+.certificate-course-name {
+    text-align: center;
+    font-size: 24px;
+    font-weight: 600;
+    color: #1a73e8;
+    margin: 30px 0;
+}
+
+.certificate-footer {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    margin-top: 50px;
+}
+
+.certificate-signature {
+    text-align: center;
+}
+
+.signature-line {
+    border-top: 2px solid #333;
+    margin-bottom: 10px;
+    padding-top: 10px;
+}
+
+.signature-label {
+    font-size: 12px;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.signature-name {
+    font-weight: 600;
+    color: #333;
+    margin-top: 5px;
+}
+
+.certificate-qr {
+    position: absolute;
+    bottom: 30px;
+    right: 30px;
+    width: 100px;
+    height: 100px;
+}
+
+.certificate-id {
+    position: absolute;
+    bottom: 30px;
+    left: 30px;
+    font-size: 10px;
+    color: #999;
+}
+
+.certificate-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.action-btn {
+    padding: 16px 32px;
+    border-radius: var(--radius-md);
+    font-weight: 700;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    border: none;
+}
+
+.btn-download {
+    background: var(--primary-gradient);
+    color: white;
+}
+
+.btn-download:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(26, 115, 232, 0.4);
+}
+
+.btn-share {
+    background: var(--card-color);
+    color: var(--text-primary);
+    border: 2px solid var(--border-color);
+}
+
+.btn-share:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.btn-verify {
+    background: #4caf50;
+    color: white;
+}
+
+.btn-verify:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(76, 175, 80, 0.4);
+}
+
+.certificate-info-card {
+    background: var(--card-color);
+    border-radius: var(--radius-lg);
+    padding: 30px;
+    box-shadow: var(--shadow-lg);
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 25px;
+}
+
+.info-item {
+    text-align: center;
+}
+
+.info-icon {
+    width: 60px;
+    height: 60px;
+    background: var(--primary-color-light);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 15px;
+    color: var(--primary-color);
+    font-size: 24px;
+}
+
+.info-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+}
+
+.info-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    .certificate-preview-card, .certificate-preview-card * {
+        visibility: visible;
+    }
+    .certificate-preview-card {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="certificate-container">
+    <div class="certificate-header">
+        <h1>🎓 Your Certificate of Completion</h1>
+        <p>Congratulations on completing the course!</p>
+    </div>
+
+    <!-- Certificate Preview -->
+    <div class="certificate-preview-card">
+        <div class="certificate-image-wrapper">
+            <div class="certificate-preview">
+                <div class="certificate-border">
+                    <div class="certificate-badge">
+                        <i class="fas fa-award"></i>
+                    </div>
+
+                    <div class="certificate-title">Certificate of Completion</div>
+                    <div class="certificate-subtitle">This is to certify that</div>
+                    
+                    <div class="certificate-student-name">
+                        {{ certificate.enrollment.student.user.get_full_name }}
+                    </div>
+                    
+                    <div class="certificate-subtitle">
+                        has successfully completed the course
+                    </div>
+                    
+                    <div class="certificate-course-name">
+                        {{ certificate.enrollment.course.title }}
+                    </div>
+                    
+                    <div class="certificate-footer">
+                        <div class="certificate-signature">
+                            <div class="signature-line">
+                                {{ certificate.enrollment.course.teacher.user.get_full_name }}
+                            </div>
+                            <div class="signature-label">Instructor</div>
+                        </div>
+                        
+                        <div class="certificate-signature">
+                            <div class="signature-line">
+                                {{ certificate.issued_date|date:"F d, Y" }}
+                            </div>
+                            <div class="signature-label">Issue Date</div>
+                        </div>
+                    </div>
+                    
+                    {% if certificate.qr_code %}
+                    <img src="{{ certificate.qr_code.url }}" class="certificate-qr" alt="QR Code">
+                    {% endif %}
+                    
+                    <div class="certificate-id">
+                        Certificate ID: {{ certificate.certificate_id }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="certificate-actions">
+        <a href="{{ certificate.certificate_file.url }}" download class="action-btn btn-download">
+            <i class="fas fa-download"></i>
+            Download PDF
+        </a>
+        
+        <button onclick="window.print()" class="action-btn btn-share">
+            <i class="fas fa-print"></i>
+            Print
+        </button>
+        
+        <a href="{% url 'courses:verify_certificate' certificate.certificate_id %}" 
+           class="action-btn btn-verify" target="_blank">
+            <i class="fas fa-check-circle"></i>
+            Verify Certificate
+        </a>
+        
+        <button onclick="shareOnLinkedIn()" class="action-btn btn-share">
+            <i class="fab fa-linkedin"></i>
+            Share on LinkedIn
+        </button>
+    </div>
+
+    <!-- Certificate Info -->
+    <div class="certificate-info-card" style="margin-top: 40px;">
+        <h3 style="font-size: 24px; font-weight: 700; margin-bottom: 30px; text-align: center;">
+            Certificate Details
+        </h3>
+        
+        <div class="info-grid">
+            <div class="info-item">
+                <div class="info-icon">
+                    <i class="fas fa-hashtag"></i>
+                </div>
+                <div class="info-label">Certificate ID</div>
+                <div class="info-value">{{ certificate.certificate_id }}</div>
+            </div>
+            
+            <div class="info-item">
+                <div class="info-icon">
+                    <i class="fas fa-calendar"></i>
+                </div>
+                <div class="info-label">Issued On</div>
+                <div class="info-value">{{ certificate.issued_date|date:"M d, Y" }}</div>
+            </div>
+            
+            <div class="info-item">
+                <div class="info-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="info-label">Course Duration</div>
+                <div class="info-value">{{ certificate.enrollment.course.duration_minutes }} min</div>
+            </div>
+            
+            <div class="info-item">
+                <div class="info-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="info-label">Status</div>
+                <div class="info-value" style="color: #4caf50;">Verified</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function shareOnLinkedIn() {
+    const certUrl = window.location.href;
+    const courseName = '{{ certificate.enrollment.course.title }}';
+    const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(certUrl)}`;
+    window.open(linkedInUrl, '_blank', 'width=600,height=400');
+}
+</script>
+{% endblock %}

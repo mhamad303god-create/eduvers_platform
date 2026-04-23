@@ -1,0 +1,78 @@
+{% extends 'layouts/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}الرسائل المرسلة{% endblock %}
+
+{% block extra_head %}
+<style>
+.message-list-shell { border:1px solid var(--dash-border); border-radius:26px; padding:24px; background:linear-gradient(180deg, rgba(15,23,42,.9), rgba(17,24,39,.96)); box-shadow:0 24px 48px rgba(2,6,23,.24); }
+.message-list-grid { display:grid; gap:16px; }
+.message-card { padding:20px; border-radius:22px; border:1px solid rgba(96,165,250,.12); background:linear-gradient(180deg, rgba(15,23,42,.46), rgba(15,23,42,.28)); box-shadow:0 18px 34px rgba(2,6,23,.16); }
+.message-card-top { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; }
+.message-card-top h3 { margin:0 0 8px; }
+.message-sender, .message-date { color:var(--dash-text-muted); }
+.message-preview { margin:14px 0 18px; color:#dbe7f5; line-height:1.9; }
+.attachment-chip { display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:999px; background:rgba(168,85,247,.16); border:1px solid rgba(168,85,247,.24); color:#f3e8ff; font-weight:800; }
+.message-actions { display:flex; gap:10px; flex-wrap:wrap; }
+.empty-state { padding:36px 24px; text-align:center; color:var(--dash-text-muted); }
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<section class="dashboard-section">
+    <div class="section-header">
+        <div class="section-title"><i class="fas fa-paper-plane"></i> الرسائل المرسلة</div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <a href="{% url 'notifications:message_list' %}" class="btn-dash btn-outline-dash">
+                <i class="fas fa-inbox"></i> الوارد
+            </a>
+            <a href="{% url 'notifications:compose_message' %}" class="btn-dash btn-primary-dash">
+                <i class="fas fa-plus"></i> رسالة جديدة
+            </a>
+        </div>
+    </div>
+
+    <div class="message-list-shell">
+        {% if sent_messages %}
+            <div class="message-list-grid">
+                {% for message in sent_messages %}
+                    <article class="message-card">
+                        <div class="message-card-top">
+                            <div>
+                                <h3>{{ message.subject|default:"بدون موضوع" }}</h3>
+                                <div class="message-sender">إلى: {{ message.receiver.get_full_name|default:message.receiver.email }}</div>
+                            </div>
+                            <div class="message-date">{{ message.created_at|date:"Y-m-d H:i" }}</div>
+                        </div>
+                        {% if message.attachment_file or message.attachment_urls %}
+                        <div class="attachment-chip"><i class="fas fa-paperclip"></i> يحتوي على مرفق</div>
+                        {% endif %}
+                        <p class="message-preview">{{ message.content|truncatechars:180 }}</p>
+                        <div class="message-actions">
+                            <a href="{% url 'notifications:message_detail' message.message_id %}" class="btn-dash btn-outline-dash">
+                                <i class="fas fa-eye"></i> عرض
+                            </a>
+                            <a href="{% url 'notifications:forward_message' message.message_id %}" class="btn-dash btn-primary-dash">
+                                <i class="fas fa-share"></i> إعادة إرسال
+                            </a>
+                            {% if message.attachment_file %}
+                            <a href="{% url 'notifications:download_message_attachment' message.message_id %}" class="btn-dash btn-outline-dash">
+                                <i class="fas fa-download"></i> تنزيل المرفق
+                            </a>
+                            {% endif %}
+                            <form method="post" action="{% url 'notifications:delete_message' message.message_id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-dash btn-outline-dash" style="color:#fecaca; border-color:rgba(248,113,113,.24);">
+                                    <i class="fas fa-trash"></i> حذف
+                                </button>
+                            </form>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">لا توجد رسائل مرسلة حالياً.</div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,262 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}EduVerse - منصة التعليم الذكية{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&family=Cairo:wght@400;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'css/animations.css' %}">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    {% block extra_head %}{% endblock %}
+</head>
+
+<body data-theme="light">
+    <!-- Theme Toggle Button -->
+    <button class="theme-toggle" id="themeToggle">
+        <i class="fas fa-moon" id="themeIcon"></i>
+        <span id="themeText">الوضع الداكن</span>
+    </button>
+
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loader">
+            <div class="loader-circle"></div>
+            <div class="loader-circle"></div>
+            <div class="loader-circle"></div>
+            <div class="loader-text">EduVerse</div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="navbar-container">
+            <a href="{% url 'home' %}" class="navbar-brand">
+                <i class="fas fa-graduation-cap"></i>
+                EduVerse
+            </a>
+            <ul class="navbar-menu" id="navbarMenu">
+                {% if user.is_authenticated %}
+                {% if 'student' in user_roles %}
+                <li><a href="{% url 'accounts:student_dashboard' %}" class="navbar-link">
+                        <i class="fas fa-chart-pie"></i> لوحة التحكم
+                    </a></li>
+                <li><a href="{% url 'courses:course_list' %}" class="navbar-link">
+                        <i class="fas fa-book"></i> الكورسات
+                    </a></li>
+                {% elif 'teacher' in user_roles %}
+                <li><a href="{% url 'accounts:teacher_dashboard' %}" class="navbar-link">
+                        <i class="fas fa-chalkboard-teacher"></i> لوحة التحكم
+                    </a></li>
+                <li><a href="{% url 'courses:teacher_course_list' %}" class="navbar-link">
+                        <i class="fas fa-list-alt"></i> كورساتي
+                    </a></li>
+                {% elif 'admin' in user_roles or 'super_admin' in user_roles %}
+                <li><a href="{% url 'accounts:admin_dashboard' %}" class="navbar-link">
+                        <i class="fas fa-cogs"></i> الإدارة
+                    </a></li>
+                {% endif %}
+                {% else %}
+                <li><a href="{% url 'home' %}#home" class="navbar-link">الرئيسية</a></li>
+                <li><a href="{% url 'home' %}#features" class="navbar-link">المميزات</a></li>
+                <li><a href="{% url 'courses:course_list' %}" class="navbar-link">الكورسات</a></li>
+                <li><a href="{% url 'home' %}#pricing" class="navbar-link">الأسعار</a></li>
+                {% endif %}
+            </ul>
+            {% if user.is_authenticated %}
+            <div class="user-menu">
+                <button class="user-dropdown" id="userDropdown">
+                    {% if user.avatar %}
+                    <img src="{{ user.avatar.url }}" alt="Profile" class="user-avatar-small"
+                        style="width: 35px; height: 35px; border-radius: 50%; object-fit: cover; border: 2px solid #10B981;">
+                    {% else %}
+                    <div class="user-avatar-placeholder"
+                        style="width: 35px; height: 35px; border-radius: 50%; background: #3B82F6; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; border: 2px solid rgba(255,255,255,0.2);">
+                        {{ user.first_name|first|default:user.username|first|upper }}
+                    </div>
+                    {% endif %}
+                    <span id="userName" style="font-weight: 600;">{{ user.first_name|default:user.username }}</span>
+                    <i class="fas fa-chevron-down" style="font-size: 0.8rem; opacity: 0.7;"></i>
+                </button>
+                <div class="dropdown-menu" id="dropdownMenu">
+                    <a href="{% url 'accounts:profile' %}" class="dropdown-item" id="profileLink">
+                        <i class="fas fa-user"></i>
+                        الملف الشخصي
+                    </a>
+                    <a href="{% url 'accounts:profile' %}" class="dropdown-item" id="settingsLink">
+                        <i class="fas fa-cog"></i>
+                        الإعدادات
+                    </a>
+                    <a href="{% url 'accounts:logout' %}" class="dropdown-item" id="logoutLink">
+                        <i class="fas fa-sign-out-alt"></i>
+                        تسجيل الخروج
+                    </a>
+                </div>
+            </div>
+            {% else %}
+            <div class="navbar-actions">
+                <a href="{% url 'accounts:login' %}" class="btn btn-outline">تسجيل الدخول</a>
+                <a href="{% url 'accounts:register' %}" class="btn btn-primary">ابدأ الآن</a>
+            </div>
+            {% endif %}
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Premium Footer -->
+    <footer class="footer animate-slide-up stagger-3">
+        <div class="footer-container">
+            <div class="footer-content">
+                <div class="footer-section brand-section">
+                    <h3 class="footer-logo">
+                        <i class="fas fa-graduation-cap"></i> EduVerse
+                    </h3>
+                    <p class="footer-desc">منصة تعليمية ذكية تربط بين الطلاب والمعلمين حول العالم، نسعى لتقديم تجربة
+                        تعليمية فريدة ومبتكرة. انضم إلينا اليوم!</p>
+                    <div class="social-links">
+                        <a href="#" class="social-link hover-lift"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="social-link hover-lift"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="social-link hover-lift"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="social-link hover-lift"><i class="fab fa-linkedin-in"></i></a>
+                        <a href="#" class="social-link hover-lift"><i class="fab fa-youtube"></i></a>
+                    </div>
+                </div>
+
+                <div class="footer-links-group">
+                    <div class="footer-section">
+                        <h4>روابط سريعة</h4>
+                        <ul>
+                            <li><a href="{% url 'home' %}" class="footer-link"><i class="fas fa-chevron-left"></i>
+                                    الرئيسية</a></li>
+                            {% if user.is_authenticated %}
+                            <li><a href="{% url 'courses:course_list' %}" class="footer-link"><i
+                                        class="fas fa-chevron-left"></i> الكورسات</a></li>
+                            {% else %}
+                            <li><a href="{% url 'accounts:login' %}" class="footer-link"><i
+                                        class="fas fa-chevron-left"></i> تسجيل الدخول</a></li>
+                            <li><a href="{% url 'accounts:register' %}" class="footer-link"><i
+                                        class="fas fa-chevron-left"></i> إنشاء حساب</a></li>
+                            {% endif %}
+                            <li><a href="#contact" class="footer-link"><i class="fas fa-chevron-left"></i> اتصل بنا</a>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="footer-section">
+                        <h4>الدعم</h4>
+                        <ul>
+                            <li><a href="#" class="footer-link"><i class="fas fa-chevron-left"></i> مركز المساعدة</a>
+                            </li>
+                            <li><a href="#" class="footer-link"><i class="fas fa-chevron-left"></i> الشروط والأحكام</a>
+                            </li>
+                            <li><a href="#" class="footer-link"><i class="fas fa-chevron-left"></i> سياسة الخصوصية</a>
+                            </li>
+                            <li><a href="#" class="footer-link"><i class="fas fa-chevron-left"></i> الأسئلة الشائعة</a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="footer-section newsletter-section">
+                    <h4>النشرة البريدية</h4>
+                    <p>اشترك للحصول على آخر الأخبار والعروض الحصرية.</p>
+                    <form class="newsletter-form" method="post" action="{% url 'home' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="form_type" value="newsletter">
+                        <div class="input-group-premium">
+                            <input type="email" name="email" class="newsletter-input" placeholder="بريدك الإلكتروني..." value="{% if user.is_authenticated %}{{ user.email }}{% endif %}" required aria-label="البريد الإلكتروني للنشرة البريدية">
+                            <button type="submit" class="newsletter-btn hover-glow">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <div class="footer-copyright">
+                    <p>&copy; 2024 EduVerse. جميع الحقوق محفوظة.</p>
+                </div>
+                <div class="footer-bottom-links">
+                    <a href="#">سياسة الاستخدام</a>
+                    <span class="separator">•</span>
+                    <a href="#">الخصوصية</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- <script src="{% static 'js/script.js' %}"></script> -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var loadingScreen = document.getElementById('loadingScreen');
+            if (loadingScreen) {
+                loadingScreen.style.display = 'none';
+            }
+        });
+    </script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const applyLazyMediaHints = function() {
+                document.querySelectorAll('img:not([loading])').forEach(function(img) {
+                    img.setAttribute('loading', 'lazy');
+                    img.setAttribute('decoding', 'async');
+                });
+                document.querySelectorAll('video').forEach(function(video) {
+                    if (!video.hasAttribute('preload')) {
+                        video.setAttribute('preload', 'metadata');
+                    }
+                    if (!video.closest('.video-player') && !video.closest('.ambient-video-card')) {
+                        video.dataset.lazyMedia = 'true';
+                    }
+                });
+            };
+
+            if ('requestIdleCallback' in window) {
+                requestIdleCallback(applyLazyMediaHints, { timeout: 1200 });
+            } else {
+                setTimeout(applyLazyMediaHints, 120);
+            }
+        });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            {% if messages %}
+                {% for message in messages %}
+                    Toastify({
+                        text: "{{ message|escapejs }}",
+                        duration: 5000,
+                        close: true,
+                        gravity: "top", 
+                        position: "right", 
+                        stopOnFocus: true, 
+                        style: {
+                            background: "{% if 'error' in message.tags or 'danger' in message.tags %}linear-gradient(135deg, #FF5F6D 0%, #FFC371 100%){% elif 'success' in message.tags %}linear-gradient(135deg, #00b09b 0%, #96c93d 100%){% elif 'warning' in message.tags %}linear-gradient(135deg, #f12711 0%, #f5af19 100%){% else %}linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%){% endif %}",
+                            borderRadius: "16px",
+                            boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
+                            fontFamily: "'Cairo', sans-serif",
+                            fontWeight: "600",
+                            padding: "16px 24px"
+                        },
+                        onClick: function(){} 
+                    }).showToast();
+                {% endfor %}
+            {% endif %}
+        });
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+
+</html>

@@ -1,0 +1,84 @@
+{% extends 'layouts/dashboard_base.html' %}
+
+{% block title %}إضافة سؤال - EduVerse{% endblock %}
+
+{% block dashboard_content %}
+<section class="dashboard-section" style="max-width: 1000px; margin-inline:auto;">
+    <div class="section-header">
+        <div class="section-title"><i class="fas fa-plus-square"></i> إضافة سؤال للتقييم</div>
+        <a href="{% url 'assessments:question_list' assessment.assessment_id %}" class="btn-dash btn-outline-dash">رجوع</a>
+    </div>
+
+    <form method="post" id="questionForm">
+        {% csrf_token %}
+        <div class="q-form-grid">
+            <div class="field full">
+                <label for="{{ question_form.question_text.id_for_label }}">نص السؤال</label>
+                {{ question_form.question_text }}
+            </div>
+            <div class="field">
+                <label for="{{ question_form.question_type.id_for_label }}">نوع السؤال</label>
+                {{ question_form.question_type }}
+            </div>
+            <div class="field">
+                <label for="{{ question_form.points.id_for_label }}">النقاط</label>
+                {{ question_form.points }}
+            </div>
+            <div class="field">
+                <label for="{{ question_form.difficulty.id_for_label }}">الصعوبة</label>
+                {{ question_form.difficulty }}
+            </div>
+            <div class="field full">
+                <label for="{{ question_form.explanation.id_for_label }}">الشرح (اختياري)</label>
+                {{ question_form.explanation }}
+            </div>
+        </div>
+
+        <div id="choicesSection" class="choices-wrap" style="display:none;">
+            <h4>خيارات الإجابة</h4>
+            {{ choice_formset.management_form }}
+            <div id="choicesContainer">
+                {% for choice_form in choice_formset %}
+                    <div class="choice-row">
+                        <div class="choice-text">{{ choice_form.choice_text }}</div>
+                        <label class="choice-check">{{ choice_form.is_correct }} صحيحة</label>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; margin-top:12px;">
+            <button type="submit" class="btn-dash btn-primary-dash">حفظ السؤال</button>
+        </div>
+    </form>
+</section>
+
+<style>
+.q-form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.q-form-grid .field { display:flex; flex-direction:column; gap:6px; }
+.q-form-grid .full { grid-column:1/-1; }
+.q-form-grid label { color:var(--dash-text-muted); font-size:.9rem; }
+.q-form-grid input, .q-form-grid select, .q-form-grid textarea { background:#0a1324; color:#fff; border:1px solid rgba(100,116,139,.68); border-radius:10px; padding:10px 11px; }
+.q-form-grid textarea { min-height:110px; }
+.choices-wrap { margin-top:14px; border:1px solid var(--dash-border); border-radius:12px; padding:12px; background:rgba(15,23,42,.6); }
+.choices-wrap h4 { margin:0 0 10px; color:#fff; }
+.choice-row { display:grid; grid-template-columns:1fr auto; gap:10px; align-items:center; margin-bottom:8px; }
+.choice-check { color:#dbeafe; display:flex; gap:6px; align-items:center; }
+@media (max-width:780px){ .q-form-grid { grid-template-columns:1fr; } .choice-row { grid-template-columns:1fr; } }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const typeSelect = document.getElementById('{{ question_form.question_type.id_for_label }}');
+    const choicesSection = document.getElementById('choicesSection');
+    const toggleChoices = () => {
+        const t = typeSelect ? typeSelect.value : '';
+        choicesSection.style.display = (t === 'multiple_choice' || t === 'true_false') ? 'block' : 'none';
+    };
+    if (typeSelect) {
+        typeSelect.addEventListener('change', toggleChoices);
+        toggleChoices();
+    }
+});
+</script>
+{% endblock %}

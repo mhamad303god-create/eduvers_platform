@@ -1,0 +1,74 @@
+{% extends 'layouts/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}مواعيد المعلم - EduVerse{% endblock %}
+
+{% block dashboard_content %}
+<div class="dashboard-section">
+    <div class="section-header">
+        <div class="section-title">
+            <i class="fas fa-calendar-alt"></i>
+            جدول مواعيد المعلم: <span style="color: var(--dash-accent);">{{ teacher.user.get_full_name|default:teacher.user.username }}</span>
+        </div>
+        <a href="{% url 'bookings:student_teacher_list' %}" class="btn-dash btn-outline-dash">
+            <i class="fas fa-arrow-right"></i> العودة للقائمة
+        </a>
+    </div>
+
+    <div style="background: rgba(255,255,255,0.03); border-radius: 12px; border: 1px solid var(--dash-border); padding: 30px;">
+        <h3 style="margin-bottom: 25px; color: white; font-size: 1.2rem; border-bottom: 1px solid var(--dash-border); padding-bottom: 15px;">
+            الأوقات المتاحة للحجز
+        </h3>
+
+        {% if availabilities %}
+        <div class="table-responsive">
+            <table class="table" style="color: var(--dash-text-muted); direction: rtl;">
+                <thead>
+                    <tr style="border-bottom: 1px solid var(--dash-border);">
+                        <th style="padding: 15px; color: var(--dash-primary);">التاريخ</th>
+                        <th style="padding: 15px; color: var(--dash-primary);">اليوم</th>
+                        <th style="padding: 15px; color: var(--dash-primary);">من الساعة</th>
+                        <th style="padding: 15px; color: var(--dash-primary);">إلى الساعة</th>
+                        <th style="padding: 15px; color: var(--dash-primary);">المنطقة الزمنية</th>
+                        <th style="padding: 15px; color: var(--dash-primary);">الحالة</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for availability in availabilities %}
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="padding: 15px;">
+                            {% if availability.specific_date %}
+                                {{ availability.specific_date|date:"Y-m-d" }}
+                            {% else %}
+                                <span style="color: var(--dash-text-muted);">متكرر أسبوعياً</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 15px;">{{ availability.get_day_of_week_display }}</td>
+                        <td style="padding: 15px; font-family: monospace; font-size: 1.1rem;">{{ availability.start_time|time:"H:i" }}</td>
+                        <td style="padding: 15px; font-family: monospace; font-size: 1.1rem;">{{ availability.end_time|time:"H:i" }}</td>
+                        <td style="padding: 15px;">{{ availability.timezone }}</td>
+                        <td style="padding: 15px;">
+                            <span style="background: rgba(16, 185, 129, 0.1); color: var(--dash-success); padding: 5px 12px; border-radius: 20px; font-size: 0.85rem;">
+                                {{ availability.get_status_display }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div style="margin-top: 30px; text-align: center;">
+            <a href="{% url 'bookings:student_book_session' %}?teacher_id={{ teacher.pk }}" class="btn-dash btn-primary-dash" style="padding: 15px 40px; font-size: 1.1rem;">
+                <i class="fas fa-calendar-check me-2"></i> حجز موعد الآن
+            </a>
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 40px; color: var(--dash-text-muted);">
+            <i class="fas fa-calendar-times" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.5;"></i>
+            <p>لا توجد أوقات متاحة لهذا المعلم حالياً.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

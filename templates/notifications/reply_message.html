@@ -1,0 +1,73 @@
+{% extends 'layouts/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}الرد على الرسالة{% endblock %}
+
+{% block dashboard_content %}
+<section class="dashboard-section">
+    <div class="section-header">
+        <div class="section-title"><i class="fas fa-reply"></i> الرد على الرسالة</div>
+        <a href="{% url 'notifications:message_list' %}" class="btn-dash btn-outline-dash">
+            <i class="fas fa-arrow-right"></i> العودة
+        </a>
+    </div>
+
+    <div class="notification-form-shell">
+        <div class="notification-form-head">
+            <h3>{{ parent_message.subject|default:"بدون موضوع" }}</h3>
+            <p>إلى: {% if request.user == parent_message.sender %}{{ parent_message.receiver.email }}{% else %}{{ parent_message.sender.email }}{% endif %}</p>
+        </div>
+        <div class="notification-form-body">
+            <div style="padding:16px; border-radius:18px; background:rgba(59,130,246,.08); border:1px solid rgba(59,130,246,.16); white-space:pre-line;">{{ parent_message.content }}</div>
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                {% if form.non_field_errors %}
+                    <div class="error-list">{{ form.non_field_errors }}</div>
+                {% endif %}
+                <div class="field-group">
+                    <label for="{{ form.content.id_for_label }}">محتوى الرد</label>
+                    {{ form.content }}
+                    {% if form.content.errors %}<div class="error-list">{{ form.content.errors }}</div>{% endif %}
+                </div>
+                <div class="field-group">
+                    <label for="{{ form.attachment_file.id_for_label }}">ملف مرفق <span class="field-optional">اختياري</span></label>
+                    {{ form.attachment_file }}
+                    <div class="field-help">يدعم الصور والفيديو والصوت وPDF والمستندات والملفات المضغوطة حتى 100MB.</div>
+                    {% if form.attachment_file.errors %}<div class="error-list">{{ form.attachment_file.errors }}</div>{% endif %}
+                </div>
+                <div class="field-group">
+                    <label for="{{ form.attachment_urls.id_for_label }}">روابط المرفقات <span class="field-optional">اختياري</span></label>
+                    {{ form.attachment_urls }}
+                    {% if form.attachment_urls.help_text %}
+                        <div class="field-help">{{ form.attachment_urls.help_text }}</div>
+                    {% endif %}
+                    {% if form.attachment_urls.errors %}<div class="error-list">{{ form.attachment_urls.errors }}</div>{% endif %}
+                </div>
+                <div class="action-row">
+                    <button type="submit" class="btn-dash btn-primary-dash"><i class="fas fa-paper-plane"></i> إرسال الرد</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+.notification-form-shell { border:1px solid var(--dash-border); border-radius:24px; overflow:hidden; background:linear-gradient(180deg, rgba(15,23,42,.96), rgba(17,24,39,.98)); box-shadow: 0 24px 48px rgba(2,6,23,.24); }
+.notification-form-head { padding:22px 26px; background:linear-gradient(135deg, rgba(59,130,246,.22), rgba(45,212,191,.22)); border-bottom:1px solid rgba(255,255,255,.06); }
+.notification-form-head h3 { margin:0 0 8px; font-size:1.3rem; }
+.notification-form-head p { margin:0; color:var(--dash-text-muted); }
+.notification-form-body { padding:24px 26px; display:grid; gap:18px; }
+.field-group { display:grid; gap:10px; }
+.field-group label { font-weight:800; color:var(--dash-text); }
+.form-control, .form-select-premium { width:100%; background:rgba(15,23,42,.75); color:#e5eefb; border:1px solid rgba(96,165,250,.24); border-radius:16px; padding:14px 16px; outline:none; transition:border-color .2s ease, box-shadow .2s ease, transform .2s ease; }
+.form-control[type="file"] { padding:12px 14px; }
+.form-control:focus, .form-select-premium:focus { border-color:rgba(96,165,250,.65); box-shadow:0 0 0 4px rgba(59,130,246,.14); transform:translateY(-1px); }
+.textarea-lg { min-height:160px; resize:vertical; }
+.error-list { color:#fda4af; font-size:.92rem; }
+.field-help { color:#94a3b8; font-size:.9rem; line-height:1.7; }
+.field-optional { display:inline-flex; align-items:center; margin-inline-start:8px; padding:3px 9px; border-radius:999px; background:rgba(34,197,94,.14); color:#bbf7d0; font-size:.78rem; font-weight:800; }
+.action-row { display:flex; justify-content:flex-end; }
+</style>
+{% endblock %}

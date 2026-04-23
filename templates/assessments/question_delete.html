@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block title %}حذف سؤال - EduVerse{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="card">
+        <div class="card-body text-center">
+            <h3 class="mb-3">تأكيد حذف السؤال</h3>
+            <p class="text-muted">{{ question.question_text }}</p>
+            <form method="post">
+                {% csrf_token %}
+                <a href="{% url 'assessments:question_list' assessment.assessment_id %}" class="btn btn-secondary me-2">إلغاء</a>
+                <button type="submit" class="btn btn-danger">حذف</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

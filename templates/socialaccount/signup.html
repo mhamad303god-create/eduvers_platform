@@ -1,0 +1,60 @@
+{% extends 'base_auth.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "Sign Up" %}{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/auth.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="login-section">
+    <div class="login-container">
+        <div class="login-info">
+            <h2>{% trans "Complete Profile" %}</h2>
+            <p>{% trans "Please provide a few more details to complete your registration." %}</p>
+            <ul class="login-features">
+                <li><i class="fas fa-user-check"></i> {% trans "Verify Identity" %}</li>
+                <li><i class="fas fa-envelope"></i> {% trans "Contact Info" %}</li>
+            </ul>
+        </div>
+
+        <div class="login-form">
+            <div class="form-header">
+                <h2>{% trans "Sign Up" %}</h2>
+                <p>{% blocktrans with provider_name=account.get_provider.name site_name=site.name %}You are about to use your {{provider_name}} account to login to {{site_name}}. As a final step, please complete the following form:{% endblocktrans %}</p>
+            </div>
+
+            <form class="signup" id="signup_form" method="post" action="{% url 'socialaccount_signup' %}">
+                {% csrf_token %}
+                
+                {% for field in form %}
+                <div class="form-group">
+                    <label class="form-label">{{ field.label }}</label>
+                    <div class="input-group">
+                        {{ field }}
+                    </div>
+                    {% if field.errors %}
+                        {% for error in field.errors %}
+                            <div class="form-error">{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+                {% if form.non_field_errors %}
+                    {% for error in form.non_field_errors %}
+                        <div class="form-error mb-3">{{ error }}</div>
+                    {% endfor %}
+                {% endif %}
+
+                <button type="submit" class="form-btn">
+                    {% trans "Sign Up" %}
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,89 @@
+{% extends 'layouts/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}إدارة الحجوزات - EduVerse{% endblock %}
+
+{% block extra_head %}
+<style>
+.booking-summary { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:16px; margin-bottom:18px; }
+.summary-tile { padding:18px; border-radius:22px; border:1px solid rgba(148,163,184,.14); box-shadow:0 22px 42px rgba(2,6,23,.2); }
+.summary-tile:nth-child(1) { background:linear-gradient(135deg, rgba(139,92,246,.18), rgba(76,29,149,.1)); }
+.summary-tile:nth-child(2) { background:linear-gradient(135deg, rgba(245,158,11,.18), rgba(146,64,14,.1)); }
+.summary-tile:nth-child(3) { background:linear-gradient(135deg, rgba(34,197,94,.18), rgba(6,95,70,.1)); }
+.summary-tile strong { display:block; margin-bottom:8px; color:#fff; }
+.summary-tile span { color:#fff; font-size:1.6rem; font-weight:900; }
+.booking-grid { display:grid; gap:16px; }
+.booking-card { padding:22px; border-radius:26px; border:1px solid rgba(148,163,184,.14); background:linear-gradient(180deg, rgba(15,23,42,.92), rgba(17,24,39,.96)); box-shadow:0 24px 48px rgba(2,6,23,.24); }
+.booking-head { display:flex; justify-content:space-between; gap:14px; margin-bottom:14px; }
+.booking-title { margin:0 0 8px; font-size:1.16rem; }
+.booking-meta { color:#94a3b8; display:flex; gap:10px; flex-wrap:wrap; }
+.status-pill { display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:999px; font-size:.82rem; font-weight:800; }
+.status-pending { background:rgba(245,158,11,.16); color:#fde68a; border:1px solid rgba(245,158,11,.2); }
+.status-confirmed, .status-in_progress { background:rgba(34,197,94,.16); color:#bbf7d0; border:1px solid rgba(34,197,94,.2); }
+.status-completed { background:rgba(56,189,248,.16); color:#dbeafe; border:1px solid rgba(56,189,248,.2); }
+.status-cancelled { background:rgba(244,63,94,.16); color:#fecdd3; border:1px solid rgba(244,63,94,.22); }
+.booking-data { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-bottom:14px; }
+.data-tile { padding:14px 16px; border-radius:18px; background:rgba(15,23,42,.55); border:1px solid rgba(148,163,184,.1); }
+.data-tile strong { display:block; margin-bottom:7px; color:#fff; }
+.data-tile span { color:#dbe7f5; }
+.booking-actions { display:flex; gap:10px; flex-wrap:wrap; }
+.empty-state { padding:36px 24px; text-align:center; border-radius:24px; background:linear-gradient(180deg, rgba(15,23,42,.86), rgba(17,24,39,.96)); color:#94a3b8; }
+@media (max-width: 980px) { .booking-summary, .booking-data { grid-template-columns:1fr 1fr; } }
+@media (max-width: 640px) { .booking-summary, .booking-data { grid-template-columns:1fr; } .booking-head { display:grid; } }
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<section class="dashboard-section">
+    <div class="section-header">
+        <div class="section-title"><i class="fas fa-users"></i> إدارة الحجوزات</div>
+    </div>
+
+    <div class="booking-summary">
+        <div class="summary-tile"><strong>إجمالي الحجوزات</strong><span>{{ total_bookings }}</span></div>
+        <div class="summary-tile"><strong>بانتظار التأكيد</strong><span>{{ pending_bookings }}</span></div>
+        <div class="summary-tile"><strong>جلسات نشطة</strong><span>{{ active_bookings }}</span></div>
+    </div>
+
+    {% if bookings %}
+    <div class="booking-grid">
+        {% for booking in bookings %}
+        <article class="booking-card">
+            <div class="booking-head">
+                <div>
+                    <h3 class="booking-title">{{ booking.course.title|default:"جلسة خاصة" }}</h3>
+                    <div class="booking-meta">
+                        <span>{{ booking.student.user.get_full_name|default:booking.student.user.email }}</span>
+                        <span>•</span>
+                        <span>{{ booking.scheduled_start|date:"Y-m-d H:i" }}</span>
+                    </div>
+                </div>
+                <div class="status-pill status-{{ booking.status }}">{{ booking.get_status_display }}</div>
+            </div>
+            <div class="booking-data">
+                <div class="data-tile"><strong>الطالب</strong><span>{{ booking.student.user.email }}</span></div>
+                <div class="data-tile"><strong>البداية</strong><span>{{ booking.scheduled_start|date:"Y-m-d H:i" }}</span></div>
+                <div class="data-tile"><strong>النهاية</strong><span>{{ booking.scheduled_end|date:"Y-m-d H:i" }}</span></div>
+                <div class="data-tile"><strong>المدة</strong><span>{{ booking.duration_minutes }} دقيقة</span></div>
+            </div>
+            <div class="booking-actions">
+                <a href="{% url 'bookings:teacher_booking_detail' booking.booking_id %}" class="btn-dash btn-outline-dash"><i class="fas fa-eye"></i> عرض</a>
+                {% if booking.meeting_url and booking.status == 'confirmed' or booking.status == 'in_progress' %}
+                <a href="{% url 'bookings:teacher_live_classroom' booking.booking_id %}" class="btn-dash btn-primary-dash"><i class="fas fa-video"></i> دخول الفصل</a>
+                {% endif %}
+                {% if booking.status == 'pending' %}
+                <a href="{% url 'bookings:confirm_booking' booking.booking_id %}" class="btn-dash btn-primary-dash"><i class="fas fa-check"></i> تأكيد</a>
+                {% endif %}
+                {% if booking.status == 'confirmed' %}
+                <a href="{% url 'bookings:complete_booking' booking.booking_id %}" class="btn-dash btn-outline-dash"><i class="fas fa-check-circle"></i> إكمال</a>
+                {% endif %}
+                <a href="{% url 'bookings:cancel_booking' booking.booking_id %}" class="btn-dash btn-outline-dash"><i class="fas fa-times"></i> إلغاء</a>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">لا توجد حجوزات حالياً.</div>
+    {% endif %}
+</section>
+{% endblock %}

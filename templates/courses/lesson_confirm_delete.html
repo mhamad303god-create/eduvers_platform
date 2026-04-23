@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block title %}حذف الدرس - {{ lesson.title }}{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 600px; padding: 4rem 1rem;">
+    <div class="card animate-fade-in-up" style="border: none; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.3); background: #1B1E2D;">
+        <div class="card-header" style="background: linear-gradient(135deg, #EF4444 0%, #B91C1C 100%); padding: 2rem; text-align: center; color: white;">
+            <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+            <h2 style="margin: 0; font-weight: 800;">تأكيد الحذف</h2>
+        </div>
+        <div class="card-body" style="padding: 2rem; text-align: center;">
+            <h3 style="color: #F3F4F6; margin-bottom: 1rem;">هل أنت متأكد من حذف الدرس؟</h3>
+            <p style="color: #9CA3AF; font-size: 1.1rem; margin-bottom: 2rem;">
+                "{{ lesson.title }}"
+                <br>
+                <span style="font-size: 0.9rem; color: #EF4444;">هذا الإجراء لا يمكن التراجع عنه.</span>
+            </p>
+            
+            <form method="post" style="display: flex; gap: 1rem; justify-content: center;">
+                {% csrf_token %}
+                <button type="submit" class="btn warning-btn hover-scale">
+                    <i class="fas fa-trash-alt"></i> نعم، احذف الدرس
+                </button>
+                <a href="{% url 'courses:course_detail' course.course_id %}" class="btn cancel-btn hover-scale">
+                    إلغاء
+                </a>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.warning-btn {
+    background: #EF4444;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 10px;
+    border: none;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.3s;
+}
+.warning-btn:hover {
+    background: #DC2626;
+    box-shadow: 0 5px 15px rgba(239, 68, 68, 0.4);
+}
+.cancel-btn {
+    background: #374151;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 10px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: 0.3s;
+}
+.cancel-btn:hover {
+    background: #4B5563;
+}
+.hover-scale:hover {
+    transform: translateY(-2px);
+}
+</style>
+{% endblock %}

@@ -1,0 +1,364 @@
+{% extends 'layouts/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Notifications{% endblock %}
+
+{% block extra_css %}
+<style>
+.notifications-container {
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 0 20px;
+}
+
+.notification-card {
+    background: var(--card-color);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    margin-bottom: 15px;
+    box-shadow: var(--shadow-md);
+    transition: all 0.3s ease;
+    position: relative;
+    border-left: 4px solid transparent;
+    cursor: pointer;
+}
+
+.notification-card.unread {
+    border-left-color: var(--primary-color);
+    background: var(--primary-color-light);
+}
+
+.notification-card:hover {
+    transform: translateX(5px);
+    box-shadow: var(--shadow-lg);
+}
+
+.notification-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    margin-bottom: 10px;
+}
+
+.notification-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.icon-success {
+    background: #d4edda;
+    color: #155724;
+}
+
+.icon-info {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+
+.icon-warning {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.icon-error {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.notification-content {
+    flex: 1;
+}
+
+.notification-title {
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 5px;
+    font-size: 16px;
+}
+
+.notification-message {
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.notification-time {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 8px;
+}
+
+.notification-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.notification-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-primary-notif {
+    background: var(--primary-gradient);
+    color: white;
+}
+
+.btn-secondary-notif {
+    background: var(--bg-color);
+    color: var(--text-secondary);
+}
+
+.mark-read-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 18px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.notification-card:hover .mark-read-btn {
+    opacity: 1;
+}
+
+#notification-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: var(--error-color);
+    color: white;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="notifications-container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+        <h1 style="font-size: 32px; font-weight: 800;">🔔 Notifications</h1>
+        <button onclick="markAllAsRead()" style="padding: 10px 20px; background: var(--primary-color); color: white; border: none; border-radius: var(--radius-md); cursor: pointer;">
+            Mark All as Read
+        </button>
+    </div>
+
+    <div id="notifications-list">
+        {% for notification in notifications %}
+        <div class="notification-card {% if not notification.is_read %}unread{% endif %}" 
+             data-notification-id="{{ notification.notification_id }}">
+            <button class="mark-read-btn" onclick="markAsRead('{{ notification.notification_id }}', event)">
+                <i class="fas fa-check-circle"></i>
+            </button>
+            
+            <div class="notification-header">
+                <div class="notification-icon icon-{{ notification.notification_type }}">
+                    <i class="fas fa-{{ notification.get_icon }}"></i>
+                </div>
+                <div class="notification-content">
+                    <div class="notification-title">{{ notification.title }}</div>
+                    <div class="notification-message">{{ notification.message }}</div>
+                    <div class="notification-time">
+                        <i class="far fa-clock"></i>
+                        {{ notification.created_at|timesince }} ago
+                    </div>
+                    
+                    {% if notification.action_url %}
+                    <div class="notification-actions">
+                        <button class="notification-btn btn-primary-notif" 
+                                onclick="window.location.href='{{ notification.action_url }}'">
+                            {{ notification.action_text|default:"View" }}
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div style="text-align: center; padding: 80px 20px;">
+            <div style="font-size: 80px; color: var(--text-secondary); opacity: 0.3; margin-bottom: 20px;">
+                <i class="far fa-bell-slash"></i>
+            </div>
+            <h3 style="font-size: 24px; margin-bottom: 10px;">No notifications yet</h3>
+            <p style="color: var(--text-secondary);">You're all caught up!</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// WebSocket Connection
+let notificationSocket = null;
+
+function connectWebSocket() {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws/notifications/`;
+    
+    notificationSocket = new WebSocket(wsUrl);
+    
+    notificationSocket.onopen = function(e) {
+        console.log('✅ WebSocket connected');
+    };
+    
+    notificationSocket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        
+        if (data.type === 'notification') {
+            addNewNotification(data.notification);
+            updateBadge();
+        } else if (data.type === 'unread_count') {
+            updateBadgeCount(data.count);
+        }
+    };
+    
+    notificationSocket.onerror = function(e) {
+        console.error('❌ WebSocket error:', e);
+    };
+    
+    notificationSocket.onclose = function(e) {
+        console.log('🔌 WebSocket closed. Reconnecting...');
+        setTimeout(connectWebSocket, 3000);
+    };
+}
+
+function addNewNotification(notification) {
+    const notificationsList = document.getElementById('notifications-list');
+    
+    // Remove "no notifications" message if exists
+    const emptyMessage = notificationsList.querySelector('[style*="text-align: center"]');
+    if (emptyMessage) {
+        emptyMessage.remove();
+    }
+    
+    // Create notification element
+    const notifEl = document.createElement('div');
+    notifEl.className = 'notification-card unread';
+    notifEl.dataset.notificationId = notification.id;
+    notifEl.innerHTML = `
+        <button class="mark-read-btn" onclick="markAsRead('${notification.id}', event)">
+            <i class="fas fa-check-circle"></i>
+        </button>
+        
+        <div class="notification-header">
+            <div class="notification-icon icon-${notification.type}">
+                <i class="fas fa-${notification.icon}"></i>
+            </div>
+            <div class="notification-content">
+                <div class="notification-title">${notification.title}</div>
+                <div class="notification-message">${notification.message}</div>
+                <div class="notification-time">
+                    <i class="far fa-clock"></i>
+                    Just now
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Add animation
+    notifEl.style.opacity = '0';
+    notifEl.style.transform = 'translateY(-20px)';
+    notificationsList.insertBefore(notifEl, notificationsList.firstChild);
+    
+    setTimeout(() => {
+        notifEl.style.transition = 'all 0.3s ease';
+        notifEl.style.opacity = '1';
+        notifEl.style.transform = 'translateY(0)';
+    }, 10);
+    
+    // Show toast
+    if (window.EduVerse && window.EduVerse.showToast) {
+        window.EduVerse.showToast(notification.message, notification.type);
+    }
+}
+
+function markAsRead(notificationId, event) {
+    if (event) {
+        event.stopPropagation();
+    }
+    
+    if (notificationSocket && notificationSocket.readyState === WebSocket.OPEN) {
+        notificationSocket.send(JSON.stringify({
+            action: 'mark_read',
+            notification_id: notificationId
+        }));
+    }
+    
+    // Update UI
+    const card = document.querySelector(`[data-notification-id="${notificationId}"]`);
+    if (card) {
+        card.classList.remove('unread');
+    }
+    
+    updateBadge();
+}
+
+function markAllAsRead() {
+    if (notificationSocket && notificationSocket.readyState === WebSocket.OPEN) {
+        notificationSocket.send(JSON.stringify({
+            action: 'mark_all_read'
+        }));
+    }
+    
+    // Update UI
+    document.querySelectorAll('.notification-card.unread').forEach(card => {
+        card.classList.remove('unread');
+    });
+    
+    updateBadge();
+}
+
+function updateBadge() {
+    const unreadCount = document.querySelectorAll('.notification-card.unread').length;
+    updateBadgeCount(unreadCount);
+}
+
+function updateBadgeCount(count) {
+    let badge = document.getElementById('notification-badge');
+    
+    if (count > 0) {
+        if (!badge) {
+            // Create badge if it doesn't exist
+            const bellIcon = document.querySelector('.notification-bell');
+            if (bellIcon) {
+                badge = document.createElement('span');
+                badge.id = 'notification-badge';
+                bellIcon.style.position = 'relative';
+                bellIcon.appendChild(badge);
+            }
+        }
+        if (badge) {
+            badge.textContent = count > 99 ? '99+' : count;
+        }
+    } else {
+        if (badge) {
+            badge.remove();
+        }
+    }
+}
+
+// Initialize WebSocket on page load
+document.addEventListener('DOMContentLoaded', connectWebSocket);
+</script>
+{% endblock %}

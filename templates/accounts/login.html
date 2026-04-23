@@ -1,0 +1,167 @@
+{% extends 'base_auth.html' %}
+{% load static %}
+
+{% block title %}تسجيل الدخول - EduVerse{% endblock %}
+
+{% block extra_head %}
+<!-- Auth Styles -->
+<link rel="stylesheet" href="{% static 'css/auth.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="auth-main">
+    <!-- Back to Home Button -->
+    <a href="/" class="btn-back-home">
+        <i class="fas fa-arrow-right"></i>
+        العودة للرئيسية
+    </a>
+
+    <div class="auth-wrapper">
+        
+        <!-- Right: The Form (Dark Side) -->
+        <div class="auth-form-side">
+            <div class="auth-header">
+                <h2>تسجيل الدخول</h2>
+                <p>اختر دورك للبدء</p>
+            </div>
+
+            <form method="post" id="loginForm">
+                {% csrf_token %}
+                
+                {% if form.non_field_errors %}
+                    <div style="background: rgba(255, 77, 77, 0.1); border: 1px solid #ff4d4d; color: #ff4d4d; padding: 10px; border-radius: 8px; margin-bottom: 20px; font-size: 0.9rem;">
+                        {% for error in form.non_field_errors %}
+                            <p style="margin: 0;"><i class="fas fa-exclamation-triangle"></i> {{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                
+                <!-- Role Selector (Segmented Control) -->
+                <div class="role-selector-segment">
+                    <div class="role-tab active" onclick="selectRole('student')" id="tab-student">طالب</div>
+                    <div class="role-tab" onclick="selectRole('teacher')" id="tab-teacher">مدرس</div>
+                    <div class="role-tab" onclick="selectRole('admin')" id="tab-admin">مدير</div>
+                    <input type="hidden" name="role_hint" id="roleHint" value="student">
+                </div>
+
+                <!-- Fields -->
+                <div class="form-group">
+                    <label class="form-label">البريد الإلكتروني</label>
+                    <div class="input-wrapper">
+                        <input type="text" name="username" class="form-input" placeholder="example@email.com" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">كلمة المرور</label>
+                    <div class="input-wrapper">
+                        <input type="password" name="password" class="form-input" placeholder="••••••••" id="passwordInput" required>
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--auth-text-muted); font-size: 0.9rem;">
+                        <input type="checkbox" name="remember">
+                        تذكرني
+                    </label>
+                    <a href="{% url 'accounts:password_reset' %}" style="font-size: 0.9rem; color: #667EEA;">نسيت كلمة المرور؟</a>
+                </div>
+
+                <button type="submit" class="btn-primary">
+                    تسجيل الدخول
+                </button>
+            </form>
+
+            <div style="text-align: center; margin: 25px 0; color: var(--auth-text-muted); font-size: 0.9rem;">
+                ليس لديك حساب؟ <a href="{% url 'accounts:register' %}" style="font-weight: 700; color: #667EEA;">إنشاء حساب جديد</a>
+            </div>
+
+            <div style="text-align: center; margin-bottom: 15px; position: relative;">
+                <span style="color: var(--auth-text-muted); font-size: 0.9rem;">أو</span>
+            </div>
+
+            <!-- Social Buttons -->
+            <div class="social-actions">
+                <a href="/accounts/google/login/" class="social-btn">
+                    <i class="fab fa-google" style="color: #EA4335;"></i>
+                    تسجيل الدخول بـ Google
+                </a>
+                <a href="/accounts/facebook/login/" class="social-btn">
+                    <i class="fab fa-facebook-f" style="color: #1877F2;"></i>
+                    تسجيل الدخول بـ Facebook
+                </a>
+            </div>
+        </div>
+
+        <!-- Left: The Visual (Purple Gradient) -->
+        <div class="auth-visual-side">
+            <div class="visual-content">
+                <h2 class="visual-title">مرحباً بك في EduVerse</h2>
+                <p class="visual-text">منصة التعليم الذكية التي تربط بين الطلاب والمعلمين</p>
+                
+                <div class="feature-list">
+                    <div class="feature-item">
+                        <span class="check-icon"><i class="fas fa-check"></i></span>
+                        تعلم مع أفضل المعلمين
+                    </div>
+                    <div class="feature-item">
+                        <span class="check-icon"><i class="fas fa-check"></i></span>
+                        جدولة مرنة ومناسبة
+                    </div>
+                    <div class="feature-item">
+                        <span class="check-icon"><i class="fas fa-check"></i></span>
+                        تقييم دقيق للمستوى
+                    </div>
+                    <div class="feature-item">
+                        <span class="check-icon"><i class="fas fa-check"></i></span>
+                        تتبع التقدم الأكاديمي
+                    </div>
+                    <div class="feature-item">
+                        <span class="check-icon"><i class="fas fa-check"></i></span>
+                        تجربة تعليمية متكاملة
+                    </div>
+                </div>
+            </div>
+
+            <!-- Animated Glass Bubbles -->
+            <ul class="glass-bubbles">
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+            </ul>
+        </div>
+
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function selectRole(role) {
+        document.querySelectorAll('.role-tab').forEach(t => t.classList.remove('active'));
+        document.getElementById('tab-' + role).classList.add('active');
+        document.getElementById('roleHint').value = role;
+    }
+
+    function togglePass() {
+        const input = document.getElementById('passwordInput');
+        const icon = document.querySelector('.toggle-password i');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    }
+</script>
+{% endblock %}

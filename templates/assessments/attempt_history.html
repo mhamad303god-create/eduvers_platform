@@ -1,0 +1,41 @@
+{% extends 'layouts/dashboard_base.html' %}
+
+{% block title %}سجل المحاولات - EduVerse{% endblock %}
+
+{% block dashboard_content %}
+<section class="dashboard-section">
+    <div class="section-header">
+        <div class="section-title"><i class="fas fa-history"></i> سجل المحاولات - {{ assessment.title }}</div>
+        <a href="{% url 'assessments:assessment_detail' assessment.assessment_id %}" class="btn-dash btn-outline-dash">رجوع</a>
+    </div>
+
+    {% if attempts %}
+        <table class="dash-table">
+            <thead>
+                <tr>
+                    <th>المحاولة</th>
+                    <th>الحالة</th>
+                    <th>النسبة</th>
+                    <th>الدرجة</th>
+                    <th>الوقت</th>
+                    <th>التاريخ</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for attempt in attempts %}
+                    <tr>
+                        <td>{{ attempt.attempt_number }}</td>
+                        <td>{{ attempt.get_status_display }}</td>
+                        <td>{% if attempt.percentage %}{{ attempt.percentage|floatformat:1 }}%{% else %}--{% endif %}</td>
+                        <td>{% if attempt.score %}{{ attempt.score }} / {{ attempt.max_score }}{% else %}--{% endif %}</td>
+                        <td>{{ attempt.time_taken|default:"--" }} ثانية</td>
+                        <td>{{ attempt.start_time|date:"Y/m/d H:i" }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div style="text-align:center; color:var(--dash-text-muted); padding:40px;">لا توجد محاولات.</div>
+    {% endif %}
+</section>
+{% endblock %}

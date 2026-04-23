@@ -1,0 +1,1248 @@
+{% extends 'layouts/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}غرفة الاتصال المباشر{% endblock %}
+
+{% block extra_head %}
+<style>
+.call-room-shell { display:grid; grid-template-columns: minmax(300px, 360px) 1fr; gap:24px; }
+.call-sidebar, .call-stage { border-radius:28px; border:1px solid rgba(96,165,250,.18); background:linear-gradient(180deg, rgba(15,23,42,.94), rgba(15,23,42,.84)); box-shadow:0 28px 58px rgba(2,6,23,.34); }
+.call-sidebar { padding:22px; display:grid; align-content:start; gap:16px; }
+.call-stage { padding:18px; min-height:78vh; }
+.call-chip { display:inline-flex; align-items:center; gap:8px; padding:10px 14px; border-radius:999px; color:#dbeafe; background:rgba(14,165,233,.12); border:1px solid rgba(14,165,233,.2); font-weight:800; }
+.call-topic { margin:0; color:#fff; font-size:1.7rem; line-height:1.4; }
+.call-message { padding:16px 18px; border-radius:20px; background:rgba(59,130,246,.08); border:1px solid rgba(59,130,246,.14); color:#dbeafe; line-height:1.9; }
+.meta-grid { display:grid; gap:12px; }
+.meta-card { padding:16px 18px; border-radius:18px; background:rgba(15,23,42,.56); border:1px solid rgba(96,165,250,.14); }
+.meta-card strong { display:block; margin-bottom:8px; color:#fff; }
+.participants-list { display:grid; gap:10px; }
+.participant-row { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 14px; border-radius:18px; background:rgba(15,23,42,.44); border:1px solid rgba(96,165,250,.12); }
+.participant-main { display:flex; align-items:center; gap:12px; min-width:0; }
+.avatar-shell { width:46px; height:46px; border-radius:50%; overflow:hidden; display:grid; place-items:center; background:linear-gradient(135deg, rgba(59,130,246,.88), rgba(139,92,246,.88)); color:#fff; font-weight:900; border:2px solid rgba(125,211,252,.24); flex-shrink:0; }
+.avatar-shell img { width:100%; height:100%; object-fit:cover; }
+.participant-name { color:#fff; font-weight:800; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.participant-role { color:#93c5fd; font-size:.85rem; }
+.participant-state { border-radius:999px; padding:6px 10px; font-size:.8rem; font-weight:800; background:rgba(148,163,184,.14); color:#e2e8f0; }
+.participant-state.online { background:rgba(16,185,129,.16); color:#dcfce7; }
+.participant-state.muted { background:rgba(239,68,68,.14); color:#fecaca; }
+.room-state-box { padding:14px 16px; border-radius:18px; background:rgba(14,165,233,.08); border:1px solid rgba(14,165,233,.14); color:#dbeafe; line-height:1.8; }
+.diagnostic-list { display:grid; gap:10px; }
+.diagnostic-row { padding:12px 14px; border-radius:16px; background:rgba(15,23,42,.46); border:1px solid rgba(96,165,250,.12); color:#dbeafe; }
+.diagnostic-row strong { display:block; margin-bottom:6px; color:#fff; }
+.end-reason-input { width:100%; min-height:96px; resize:vertical; background:rgba(15,23,42,.82); color:#e5eefb; border:1px solid rgba(96,165,250,.24); border-radius:16px; padding:14px 16px; }
+.stage-head { display:flex; justify-content:space-between; gap:16px; align-items:flex-start; margin-bottom:16px; flex-wrap:wrap; }
+.stage-title { display:grid; gap:8px; }
+.stage-title h2 { margin:0; color:#fff; font-size:1.35rem; }
+.stage-title span { color:#93c5fd; }
+.control-bar { display:flex; gap:10px; flex-wrap:wrap; }
+.call-control { border:none; border-radius:16px; padding:12px 14px; min-width:120px; font-weight:800; color:#e2e8f0; background:rgba(15,23,42,.88); border:1px solid rgba(96,165,250,.18); cursor:pointer; display:inline-flex; justify-content:center; align-items:center; gap:8px; }
+.call-control.active { background:linear-gradient(135deg, rgba(14,165,233,.22), rgba(59,130,246,.24)); color:#fff; border-color:rgba(96,165,250,.42); }
+.call-control.warn { background:linear-gradient(135deg, rgba(245,158,11,.18), rgba(251,191,36,.12)); color:#fef3c7; }
+.call-control.danger { background:linear-gradient(135deg, rgba(239,68,68,.20), rgba(220,38,38,.18)); color:#fff; border-color:rgba(248,113,113,.24); }
+.video-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:14px; min-height:66vh; align-items:stretch; }
+.video-grid[data-count="1"] { grid-template-columns: minmax(0, 1fr); }
+.video-grid[data-count="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.video-grid[data-count="3"], .video-grid[data-count="4"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.video-grid[data-count="5"], .video-grid[data-count="6"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.video-grid.has-spotlight .video-tile.is-spotlight { grid-column: span 2; min-height:340px; }
+.video-grid.has-filmstrip { grid-template-columns: minmax(0, 1.85fr) minmax(240px, .72fr); }
+.video-grid.has-filmstrip .video-tile.is-stage { grid-column: 1; grid-row: 1 / span 6; min-height: 66vh; }
+.video-grid.has-filmstrip .video-tile.is-filmstrip { min-height: 150px; }
+.video-tile { position:relative; overflow:hidden; min-height:280px; border-radius:26px; border:1px solid rgba(96,165,250,.14); cursor:pointer; transition:transform .18s ease, border-color .18s ease, box-shadow .18s ease; background:
+linear-gradient(180deg, rgba(2,6,23,.14), rgba(2,6,23,.46)),
+var(--tile-art, radial-gradient(circle at 20% 20%, rgba(59,130,246,.24), transparent 34%), radial-gradient(circle at 80% 80%, rgba(14,165,233,.18), transparent 28%), #030712);
+box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 20px 38px rgba(2,6,23,.22); }
+.video-tile:hover { transform:translateY(-2px); border-color:rgba(125,211,252,.28); }
+.video-tile.is-stage { border-color:rgba(125,211,252,.38); box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 24px 44px rgba(2,6,23,.3); }
+.video-tile.is-pinned { border-color:rgba(250,204,21,.34); }
+.video-tile::before { content:""; position:absolute; inset:0; background:var(--tile-art); background-size:cover; background-position:center; filter:blur(28px) saturate(1.24); transform:scale(1.08); opacity:.34; }
+.video-el { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:1; background:#020617; }
+.video-empty { position:absolute; inset:0; z-index:1; display:grid; place-items:center; color:#bfdbfe; font-weight:800; text-align:center; padding:20px; }
+.tile-overlay { position:absolute; inset:0; z-index:2; pointer-events:none; background:linear-gradient(180deg, rgba(2,6,23,.04), rgba(2,6,23,.06) 50%, rgba(2,6,23,.62)); }
+.tile-pin { position:absolute; top:12px; right:12px; z-index:3; width:38px; height:38px; border:none; border-radius:999px; background:rgba(2,6,23,.78); color:#e2e8f0; border:1px solid rgba(148,163,184,.18); display:grid; place-items:center; cursor:pointer; }
+.tile-pin.active { background:rgba(250,204,21,.18); color:#fde68a; border-color:rgba(250,204,21,.28); }
+.tile-meta { position:absolute; right:12px; left:12px; bottom:12px; z-index:3; display:flex; justify-content:space-between; gap:10px; align-items:flex-end; }
+.tile-name { display:grid; gap:5px; color:#fff; font-weight:900; }
+.tile-name span { color:#cbd5e1; font-size:.82rem; font-weight:700; }
+.tile-badges { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+.tile-badge { border-radius:999px; padding:6px 10px; background:rgba(2,6,23,.82); color:#e2e8f0; border:1px solid rgba(148,163,184,.18); font-size:.76rem; font-weight:800; }
+.tile-badge.live { background:rgba(16,185,129,.2); color:#dcfce7; border-color:rgba(16,185,129,.22); }
+.tile-badge.warn { background:rgba(239,68,68,.18); color:#fecaca; border-color:rgba(248,113,113,.2); }
+.tile-badge.share { background:rgba(245,158,11,.18); color:#fde68a; border-color:rgba(245,158,11,.22); }
+.tile-badge.self { background:rgba(14,165,233,.18); color:#dbeafe; border-color:rgba(125,211,252,.22); }
+.status-ribbon { position:absolute; top:12px; left:12px; z-index:3; display:inline-flex; align-items:center; gap:8px; border-radius:999px; padding:7px 11px; background:rgba(2,6,23,.82); color:#fff; border:1px solid rgba(96,165,250,.18); font-size:.8rem; font-weight:800; }
+.room-note { margin-top:14px; color:#93c5fd; }
+.security-hint { margin-bottom:16px; padding:16px 18px; border-radius:18px; background:rgba(245,158,11,.12); border:1px solid rgba(245,158,11,.24); color:#fde68a; line-height:1.9; }
+.security-hint a { color:#fff; font-weight:800; text-decoration:underline; word-break:break-all; }
+@media (max-width: 1100px) { .call-room-shell { grid-template-columns:1fr; } .call-stage { min-height:auto; } }
+@media (max-width: 760px) { .control-bar { width:100%; } .call-control { flex:1 1 calc(50% - 10px); min-width:0; } .video-grid { grid-template-columns:1fr !important; } }
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<section class="dashboard-section">
+    <div class="section-header">
+        <div class="section-title"><i class="fas fa-video"></i> غرفة اتصال محلية خاصة بالمنصة</div>
+        <a href="{{ redirect_url }}" class="btn-dash btn-outline-dash" id="backToCallsLink">
+            <i class="fas fa-arrow-right"></i> العودة إلى قائمة الاتصال
+        </a>
+    </div>
+
+    {% if localhost_room_hint_url %}
+    <div class="security-hint">
+        يبدو أنك فتحت الغرفة عبر رابط غير آمن للأجهزة. على نفس الجهاز استخدم هذا الرابط لتفعيل الكاميرا والمايك مباشرة:
+        <a href="{{ localhost_room_hint_url }}">{{ localhost_room_hint_url }}</a>
+    </div>
+    {% endif %}
+
+    <div class="call-room-shell">
+        <aside class="call-sidebar">
+            <div class="call-chip"><i class="fas fa-shield-alt"></i> اتصال خاص داخل مشروعك</div>
+            <h1 class="call-topic">{{ call.topic|default:"اتصال مباشر" }}</h1>
+            <div class="call-message">{{ call.message|default:"بدون رسالة مرفقة" }}</div>
+
+            <div class="meta-grid">
+                <div class="meta-card">
+                    <strong>حالة الغرفة</strong>
+                    <span id="callStatusLabel">{{ call.get_status_display }}</span>
+                </div>
+                <div class="meta-card">
+                    <strong>وصف الحالة</strong>
+                    <span id="callStateMessage">جارٍ تجهيز الكاميرا والمايك وربط الأطراف بشكل مباشر.</span>
+                </div>
+                <div class="meta-card">
+                    <strong>تقسيم الشاشة</strong>
+                    <span id="layoutModeLabel">يتم إبراز الطرف الآخر تلقائياً على الشاشة الكبيرة.</span>
+                </div>
+                <div class="meta-card">
+                    <strong>جودة الشبكة</strong>
+                    <span id="networkQualityLabel">جارٍ القياس...</span>
+                </div>
+                <div class="meta-card">
+                    <strong>معدل البث</strong>
+                    <span id="bitrateLabel">-- kbps</span>
+                </div>
+                <div class="meta-card">
+                    <strong>حالة الربط</strong>
+                    <span id="reconnectingLabel">مستقر</span>
+                </div>
+            </div>
+
+            <div>
+                <strong style="display:block; margin-bottom:10px; color:#fff;">المشاركون</strong>
+                <div class="participants-list" id="participantsList">
+                    {% for participant in participants %}
+                    <div class="participant-row" data-participant-user-id="{{ participant.user_id }}">
+                        <div class="participant-main">
+                            <div class="avatar-shell">
+                                {% if participant.user.avatar %}
+                                <img src="{{ participant.user.avatar.url }}" alt="{{ participant.user.get_full_name|default:participant.user.email }}">
+                                {% else %}
+                                <span>{{ participant.user.get_full_name|default:participant.user.email|first|upper }}</span>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <div class="participant-name">{{ participant.user.get_full_name|default:participant.user.email }}</div>
+                                <div class="participant-role">{{ participant.get_role_display }}</div>
+                            </div>
+                        </div>
+                        <span class="participant-state {% if participant.joined_at %}online{% endif %}" data-participant-state>
+                            {% if participant.joined_at %}متصل{% else %}بانتظار الدخول{% endif %}
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="room-state-box" id="deviceStateBox">الكاميرا والمايك لم يُفعلا بعد.</div>
+            <div class="diagnostic-list" id="deviceDiagnosticList">
+                <div class="diagnostic-row"><strong>أمان الصفحة</strong><span id="secureContextStatus">جارٍ الفحص...</span></div>
+                <div class="diagnostic-row"><strong>صلاحية الكاميرا والمايك</strong><span id="permissionStatus">جارٍ الفحص...</span></div>
+                <div class="diagnostic-row"><strong>الأجهزة المكتشفة</strong><span id="deviceInventoryStatus">جارٍ الفحص...</span></div>
+            </div>
+
+            <form id="endCallForm" method="post" action="{% url 'notifications:respond_live_call' call.call_id 'end' %}" style="display:grid; gap:10px;">
+                {% csrf_token %}
+                <label style="font-weight:900; color:#fff;">إنهاء الاتصال مع السبب</label>
+                <textarea name="reason" id="endReasonInput" rows="4" class="end-reason-input" placeholder="مثال: انتهت المراجعة / تم حل المشكلة / انشغال طارئ"></textarea>
+                <button type="submit" class="btn-dash btn-outline-dash" style="color:#fecaca; border-color:rgba(248,113,113,.24);">
+                    <i class="fas fa-phone-slash"></i> إنهاء الاتصال
+                </button>
+            </form>
+        </aside>
+
+        <section class="call-stage">
+            <div class="stage-head">
+                <div class="stage-title">
+                    <h2>بث مباشر محلي داخل المنصة</h2>
+                    <span>بدون تضمين خارجي. الفيديوهات هنا تُدار عبر WebRTC وإشارة محلية من مشروعك.</span>
+                </div>
+                <div class="control-bar">
+                    <button type="button" class="call-control active" id="toggleAudioBtn"><i class="fas fa-microphone"></i> المايك</button>
+                    <button type="button" class="call-control active" id="toggleVideoBtn"><i class="fas fa-video"></i> الكاميرا</button>
+                    <button type="button" class="call-control warn" id="shareScreenBtn"><i class="fas fa-desktop"></i> مشاركة الشاشة</button>
+                    <button type="button" class="call-control" id="retryMediaBtn"><i class="fas fa-rotate"></i> إعادة التهيئة</button>
+                    <button type="button" class="call-control danger" id="leaveCallBtn"><i class="fas fa-door-open"></i> خروج</button>
+                </div>
+            </div>
+
+            <div class="video-grid" id="videoGrid" data-count="1">
+                <article class="video-tile" data-user-id="{{ current_user_id }}">
+                    <button type="button" class="tile-pin" data-pin-toggle title="تثبيت هذا البث على الشاشة الكبيرة">
+                        <i class="fas fa-thumbtack"></i>
+                    </button>
+                    <video id="localVideo" class="video-el" autoplay playsinline muted></video>
+                    <div class="video-empty" id="localVideoFallback">يتم تهيئة الكاميرا المحلية...</div>
+                    <div class="tile-overlay"></div>
+                    <div class="status-ribbon" id="roomTransportState"><i class="fas fa-wave-square"></i> ربط محلي</div>
+                    <div class="tile-meta">
+                        <div class="tile-name">
+                            <strong>أنت</strong>
+                            <span>البث المحلي</span>
+                        </div>
+                        <div class="tile-badges">
+                            <span class="tile-badge self">أنت</span>
+                            <span class="tile-badge live" id="localAudioBadge">صوت شغال</span>
+                            <span class="tile-badge live" id="localVideoBadge">صورة شغالة</span>
+                        </div>
+                    </div>
+                </article>
+            </div>
+            <div class="room-note" id="roomNote">إذا كان الطرف الآخر داخل الغرفة فستظهر شاشته هنا مباشرة مع تقسيم تلقائي.</div>
+        </section>
+    </div>
+</section>
+
+{{ webrtc_ice_servers|json_script:"webrtc-ice-servers" }}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const currentUserId = Number('{{ current_user_id }}');
+    const callId = Number('{{ call.call_id }}');
+    const wsPath = '{{ call_ws_url }}';
+    const redirectUrl = '{{ redirect_url }}';
+    const statusUrl = '{% url "notifications:live_call_status" call.call_id %}';
+    const csrfToken = '{{ csrf_token }}';
+    const iceServers = JSON.parse(document.getElementById('webrtc-ice-servers').textContent || '[]');
+
+    const videoGrid = document.getElementById('videoGrid');
+    const localVideo = document.getElementById('localVideo');
+    const localVideoFallback = document.getElementById('localVideoFallback');
+    const participantsList = document.getElementById('participantsList');
+    const callStatusLabel = document.getElementById('callStatusLabel');
+    const callStateMessage = document.getElementById('callStateMessage');
+    const deviceStateBox = document.getElementById('deviceStateBox');
+    const roomNote = document.getElementById('roomNote');
+    const roomTransportState = document.getElementById('roomTransportState');
+    const layoutModeLabel = document.getElementById('layoutModeLabel');
+
+    const toggleAudioBtn = document.getElementById('toggleAudioBtn');
+    const toggleVideoBtn = document.getElementById('toggleVideoBtn');
+    const shareScreenBtn = document.getElementById('shareScreenBtn');
+    const retryMediaBtn = document.getElementById('retryMediaBtn');
+    const leaveCallBtn = document.getElementById('leaveCallBtn');
+    const endCallForm = document.getElementById('endCallForm');
+    const backToCallsLink = document.getElementById('backToCallsLink');
+
+    const localAudioBadge = document.getElementById('localAudioBadge');
+    const localVideoBadge = document.getElementById('localVideoBadge');
+    const secureContextStatus = document.getElementById('secureContextStatus');
+    const permissionStatus = document.getElementById('permissionStatus');
+    const deviceInventoryStatus = document.getElementById('deviceInventoryStatus');
+    const networkQualityLabel = document.getElementById('networkQualityLabel');
+    const bitrateLabel = document.getElementById('bitrateLabel');
+    const reconnectingLabel = document.getElementById('reconnectingLabel');
+
+    let localStream = null;
+    let cameraStream = null;
+    let screenStream = null;
+    let callSocket = null;
+    let hasRedirected = false;
+    let localState = { audioEnabled: true, videoEnabled: true, screenSharing: false };
+    const peerConnections = new Map();
+    const remoteTiles = new Map();
+    const peerMeta = new Map();
+    const pendingIceCandidates = new Map();
+    const statsSnapshots = new Map();
+    let activeVideoProfile = 'high';
+    let pinnedStageUserId = null;
+    let dominantSpeakerUserId = null;
+    let heartbeatTimer = null;
+    let statsTimer = null;
+    let statusTimer = null;
+    let socketReconnectTimer = null;
+    let socketReconnectAttempts = 0;
+    const isLocalHost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+    const localTile = videoGrid.querySelector(`[data-user-id="${currentUserId}"]`);
+
+    function stopStream(stream) {
+        if (!stream) return;
+        stream.getTracks().forEach(function(track) {
+            track.stop();
+        });
+    }
+
+    function buildMediaErrorMessage(error) {
+        const name = error && error.name ? error.name : '';
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            return 'هذا المتصفح لا يدعم تشغيل الكاميرا والمايك عبر MediaDevices.';
+        }
+        if (!window.isSecureContext && !isLocalHost) {
+            return 'تشغيل الكاميرا والمايك يتطلب رابطاً آمناً HTTPS. افتح المنصة عبر https أو localhost ثم أعد المحاولة.';
+        }
+        if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+            return 'تم رفض صلاحية الكاميرا أو المايك من المتصفح. اسمح لهما من شريط العنوان ثم اضغط إعادة التهيئة.';
+        }
+        if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
+            return 'لم يتم العثور على كاميرا أو مايك متصلين بالجهاز.';
+        }
+        if (name === 'NotReadableError' || name === 'TrackStartError') {
+            return 'الكاميرا أو المايك قيد الاستخدام في تطبيق آخر. أغلق التطبيق الآخر ثم أعد المحاولة.';
+        }
+        if (name === 'OverconstrainedError' || name === 'ConstraintNotSatisfiedError') {
+            return 'إعدادات الكاميرا الحالية لا تناسب جهازك. تم تخفيف القيود ويمكنك إعادة التهيئة الآن.';
+        }
+        return 'تعذر تشغيل الكاميرا أو المايك حالياً. راجع الصلاحيات والأجهزة ثم أعد المحاولة.';
+    }
+
+    async function refreshDeviceDiagnostics() {
+        const secureText = window.isSecureContext || isLocalHost
+            ? 'السياق آمن ويمكن للمتصفح السماح بالأجهزة.'
+            : 'السياق غير آمن. يجب تشغيل المنصة عبر HTTPS أو localhost.';
+        secureContextStatus.textContent = secureText;
+
+        if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+            permissionStatus.textContent = 'المتصفح لا يدعم فحص الصلاحيات أو الأجهزة.';
+            deviceInventoryStatus.textContent = 'تعذر قراءة قائمة الأجهزة.';
+            return;
+        }
+
+        try {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const audioInputs = devices.filter(function(device) { return device.kind === 'audioinput'; }).length;
+            const videoInputs = devices.filter(function(device) { return device.kind === 'videoinput'; }).length;
+            deviceInventoryStatus.textContent = `كاميرات: ${videoInputs} | مايكات: ${audioInputs}`;
+        } catch (error) {
+            deviceInventoryStatus.textContent = 'تعذر قراءة الأجهزة من المتصفح.';
+        }
+
+        if (navigator.permissions && navigator.permissions.query) {
+            try {
+                const cameraPermission = await navigator.permissions.query({ name: 'camera' });
+                const microphonePermission = await navigator.permissions.query({ name: 'microphone' });
+                permissionStatus.textContent = `الكاميرا: ${cameraPermission.state} | المايك: ${microphonePermission.state}`;
+            } catch (error) {
+                permissionStatus.textContent = 'المتصفح لا يعيد حالة الصلاحيات بشكل مباشر، لكن يمكن طلبها أثناء التهيئة.';
+            }
+        } else {
+            permissionStatus.textContent = 'فحص الصلاحيات غير مدعوم، وسيتم طلبها مباشرة عند التهيئة.';
+        }
+    }
+
+    async function requestUserMedia(constraints) {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            throw new Error('MediaDevicesUnavailable');
+        }
+        return navigator.mediaDevices.getUserMedia(constraints);
+    }
+
+    async function acquireBestEffortStream() {
+        const attempts = [
+            {
+                label: 'audio_video_hd',
+                constraints: {
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true,
+                    },
+                    video: {
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                        facingMode: 'user',
+                    },
+                },
+            },
+            {
+                label: 'audio_video_basic',
+                constraints: {
+                    audio: true,
+                    video: true,
+                },
+            },
+            {
+                label: 'audio_only',
+                constraints: {
+                    audio: true,
+                    video: false,
+                },
+            },
+            {
+                label: 'video_only',
+                constraints: {
+                    audio: false,
+                    video: true,
+                },
+            },
+        ];
+
+        let lastError = null;
+        for (const attempt of attempts) {
+            try {
+                const stream = await requestUserMedia(attempt.constraints);
+                return { stream, mode: attempt.label };
+            } catch (error) {
+                lastError = error;
+            }
+        }
+        throw lastError || new Error('MediaInitFailed');
+    }
+
+    function getTileUserId(tile) {
+        return Number(tile.dataset.remoteUserId || tile.dataset.userId || 0);
+    }
+
+    function isRemoteTile(tile) {
+        return Boolean(tile.dataset.remoteUserId);
+    }
+
+    function chooseStageTile(tiles) {
+        const remoteTilesOnly = tiles.filter(isRemoteTile);
+        const remoteScreenShareTile = remoteTilesOnly.find(function(tile) {
+            return tile.dataset.screenSharing === 'true';
+        });
+        if (remoteScreenShareTile) return remoteScreenShareTile;
+
+        const anyScreenShareTile = tiles.find(function(tile) {
+            return tile.dataset.screenSharing === 'true';
+        });
+        if (anyScreenShareTile) return anyScreenShareTile;
+
+        if (pinnedStageUserId) {
+            const pinnedTile = tiles.find(function(tile) {
+                return getTileUserId(tile) === pinnedStageUserId;
+            });
+            if (pinnedTile) return pinnedTile;
+        }
+
+        if (dominantSpeakerUserId) {
+            const speakerTile = remoteTilesOnly.find(function(tile) {
+                return getTileUserId(tile) === dominantSpeakerUserId;
+            });
+            if (speakerTile) return speakerTile;
+        }
+
+        if (remoteTilesOnly.length) return remoteTilesOnly[0];
+        return localTile || tiles[0] || null;
+    }
+
+    function updateLayoutNote(stageTile, shouldFilmstrip) {
+        if (!layoutModeLabel || !stageTile) return;
+        const label = stageTile.querySelector('.tile-name strong');
+        const stageName = label ? label.textContent.trim() : 'المشارك الرئيسي';
+        if (stageTile.dataset.screenSharing === 'true') {
+            layoutModeLabel.textContent = `يتم إبراز ${stageName} لأنه يشارك الشاشة الآن.`;
+            return;
+        }
+        if (pinnedStageUserId && getTileUserId(stageTile) === pinnedStageUserId) {
+            layoutModeLabel.textContent = `تم تثبيت ${stageName} على الشاشة الكبيرة.`;
+            return;
+        }
+        if (shouldFilmstrip && isRemoteTile(stageTile)) {
+            layoutModeLabel.textContent = `الشاشة الكبيرة تعرض ${stageName} تلقائياً مع وضع البث الجانبي لباقي المشاركين.`;
+            return;
+        }
+        layoutModeLabel.textContent = 'يتغيّر تقسيم الشاشة تلقائياً حسب عدد المتصلين داخل الغرفة.';
+    }
+
+    function syncPinButtons() {
+        videoGrid.querySelectorAll('.video-tile').forEach(function(tile) {
+            const pinBtn = tile.querySelector('[data-pin-toggle]');
+            if (!pinBtn) return;
+            const active = pinnedStageUserId && getTileUserId(tile) === pinnedStageUserId;
+            pinBtn.classList.toggle('active', Boolean(active));
+            pinBtn.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+    }
+
+    function updateGridCount() {
+        const tiles = Array.from(videoGrid.querySelectorAll('.video-tile'));
+        videoGrid.dataset.count = String(tiles.length);
+        const spotlightTile = tiles.find(function(tile) {
+            return tile.dataset.screenSharing === 'true';
+        });
+        videoGrid.classList.toggle('has-spotlight', Boolean(spotlightTile && tiles.length > 1));
+        const shouldFilmstrip = tiles.length >= 2;
+        const stageTile = chooseStageTile(tiles);
+        videoGrid.classList.toggle('has-filmstrip', shouldFilmstrip);
+        tiles.forEach(function(tile) {
+            const isStage = shouldFilmstrip ? stageTile === tile : false;
+            tile.classList.toggle('is-spotlight', spotlightTile === tile);
+            tile.classList.toggle('is-stage', isStage);
+            tile.classList.toggle('is-filmstrip', shouldFilmstrip && !isStage);
+            tile.classList.toggle('is-pinned', Boolean(pinnedStageUserId && getTileUserId(tile) === pinnedStageUserId));
+        });
+        syncPinButtons();
+        updateLayoutNote(stageTile, shouldFilmstrip);
+    }
+
+    function setConnectionInsights(metrics) {
+        networkQualityLabel.textContent = metrics.qualityLabel;
+        bitrateLabel.textContent = `${metrics.bitrateKbps} kbps`;
+        reconnectingLabel.textContent = metrics.reconnecting ? 'يعيد الربط' : 'مستقر';
+    }
+
+    function chooseVideoProfile(metrics) {
+        const participantCount = remoteTiles.size + 1;
+        if (metrics.reconnecting || metrics.quality === 'poor' || participantCount >= 6) return 'low';
+        if (metrics.quality === 'fair' || participantCount >= 4) return 'medium';
+        return 'high';
+    }
+
+    async function applyAdaptiveVideoProfile(profile) {
+        if (activeVideoProfile === profile || !localStream) return;
+        activeVideoProfile = profile;
+        const target = {
+            high: { maxBitrate: 1800000, scaleResolutionDownBy: 1, maxFramerate: 30, label: 'عالية' },
+            medium: { maxBitrate: 900000, scaleResolutionDownBy: 1.4, maxFramerate: 24, label: 'متوسطة' },
+            low: { maxBitrate: 350000, scaleResolutionDownBy: 2, maxFramerate: 18, label: 'منخفضة' },
+        }[profile];
+
+        for (const state of peerConnections.values()) {
+            const sender = state.pc.getSenders().find(function(item) {
+                return item.track && item.track.kind === 'video';
+            });
+            if (!sender || !sender.getParameters) continue;
+            const params = sender.getParameters();
+            params.encodings = params.encodings && params.encodings.length ? params.encodings : [{}];
+            params.encodings[0].maxBitrate = target.maxBitrate;
+            params.encodings[0].scaleResolutionDownBy = target.scaleResolutionDownBy;
+            params.encodings[0].maxFramerate = target.maxFramerate;
+            try {
+                await sender.setParameters(params);
+            } catch (error) {
+                console.warn('adaptive profile update failed', error);
+            }
+        }
+        roomNote.textContent = `عدد المتصلين الآن: ${remoteTiles.size}. جودة البث التكيفية: ${target.label}.`;
+    }
+
+    async function readPeerStats(peerId, state) {
+        if (!state || !state.pc || !state.pc.getStats) {
+            return { bitrateKbps: 0, rttMs: null, packetsLost: 0, reconnecting: false, audioLevel: 0 };
+        }
+        const report = await state.pc.getStats();
+        let bitrateKbps = 0;
+        let rttMs = null;
+        let packetsLost = 0;
+        let audioLevel = 0;
+        const now = Date.now();
+
+        report.forEach(function(stat) {
+            if (stat.type === 'candidate-pair' && stat.state === 'succeeded' && stat.currentRoundTripTime !== undefined) {
+                rttMs = Math.round(stat.currentRoundTripTime * 1000);
+            }
+            if (stat.type === 'outbound-rtp' && stat.kind === 'video' && !stat.isRemote && stat.bytesSent !== undefined) {
+                const prev = statsSnapshots.get(peerId);
+                if (prev && now > prev.time) {
+                    bitrateKbps = Math.max(0, Math.round(((stat.bytesSent - prev.bytesSent) * 8) / (now - prev.time)));
+                }
+                statsSnapshots.set(peerId, { bytesSent: stat.bytesSent, time: now });
+            }
+            if ((stat.type === 'remote-inbound-rtp' || stat.type === 'inbound-rtp') && stat.kind === 'video' && stat.packetsLost !== undefined) {
+                packetsLost = Math.max(packetsLost, stat.packetsLost);
+            }
+            if ((stat.type === 'inbound-rtp' || stat.type === 'track') && stat.kind === 'audio' && stat.audioLevel !== undefined) {
+                audioLevel = Math.max(audioLevel, Number(stat.audioLevel || 0));
+            }
+        });
+
+        return {
+            bitrateKbps,
+            rttMs,
+            packetsLost,
+            reconnecting: ['disconnected', 'connecting'].includes(state.pc.connectionState),
+            audioLevel,
+        };
+    }
+
+    async function refreshConnectionStats() {
+        const states = Array.from(peerConnections.entries());
+        if (!states.length) {
+            setConnectionInsights({ quality: 'high', qualityLabel: 'محلي فقط', bitrateKbps: 0, reconnecting: false });
+            return;
+        }
+
+        let maxRtt = 0;
+        let totalBitrate = 0;
+        let totalLost = 0;
+        let reconnecting = callSocket && callSocket.readyState !== WebSocket.OPEN;
+        let loudestPeerId = null;
+        let loudestAudioLevel = 0;
+
+        for (const [peerId, state] of states) {
+            try {
+                const metrics = await readPeerStats(peerId, state);
+                totalBitrate += metrics.bitrateKbps;
+                totalLost += metrics.packetsLost;
+                maxRtt = Math.max(maxRtt, metrics.rttMs || 0);
+                reconnecting = reconnecting || metrics.reconnecting;
+                if (metrics.audioLevel > loudestAudioLevel) {
+                    loudestAudioLevel = metrics.audioLevel;
+                    loudestPeerId = Number(peerId);
+                }
+            } catch (error) {
+                reconnecting = true;
+            }
+        }
+
+        let quality = 'high';
+        let qualityLabel = 'ممتازة';
+        if (reconnecting || maxRtt > 420 || totalBitrate < 180) {
+            quality = 'poor';
+            qualityLabel = 'ضعيفة';
+        } else if (maxRtt > 260 || totalBitrate < 450 || totalLost > 20) {
+            quality = 'fair';
+            qualityLabel = 'متوسطة';
+        } else if (maxRtt > 140 || totalBitrate < 900 || totalLost > 5) {
+            quality = 'medium';
+            qualityLabel = 'جيدة';
+        }
+
+        const summary = { quality, qualityLabel, bitrateKbps: totalBitrate, reconnecting };
+        const nextDominantSpeaker = loudestAudioLevel >= 0.03 ? loudestPeerId : null;
+        if (nextDominantSpeaker !== dominantSpeakerUserId) {
+            dominantSpeakerUserId = nextDominantSpeaker;
+            updateGridCount();
+        }
+        setConnectionInsights(summary);
+        await applyAdaptiveVideoProfile(chooseVideoProfile(summary));
+    }
+
+    function setTransportState(label, connected) {
+        roomTransportState.innerHTML = `<i class="fas fa-wave-square"></i> ${label}`;
+        roomTransportState.style.background = connected ? 'rgba(16,185,129,.18)' : 'rgba(245,158,11,.18)';
+        roomTransportState.style.color = connected ? '#dcfce7' : '#fde68a';
+        roomTransportState.style.borderColor = connected ? 'rgba(16,185,129,.24)' : 'rgba(245,158,11,.24)';
+    }
+
+    async function requestPeerIceRestart(peerId, state, reason) {
+        if (!state || !state.pc || !callSocket || callSocket.readyState !== WebSocket.OPEN) return;
+        const now = Date.now();
+        if (state.lastIceRestartAt && (now - state.lastIceRestartAt) < 6000) return;
+        state.lastIceRestartAt = now;
+        try {
+            if (typeof state.pc.restartIce === 'function') {
+                state.pc.restartIce();
+            }
+            const offer = await state.pc.createOffer({ iceRestart: true });
+            await state.pc.setLocalDescription(offer);
+            callSocket.send(JSON.stringify({
+                action: 'signal',
+                target: peerId,
+                payload: { description: state.pc.localDescription },
+            }));
+            updateParticipantState(peerId, 'يعيد الربط', 'muted');
+            roomNote.textContent = `يحاول النظام إعادة الربط مع ${peerMeta.get(peerId)?.name || 'المشارك'} بسبب ${reason}.`;
+        } catch (error) {
+            console.warn('ice restart failed', error);
+        }
+    }
+
+    function updateLocalBadges() {
+        localAudioBadge.textContent = localState.audioEnabled ? 'صوت شغال' : 'صوت مكتوم';
+        localAudioBadge.className = `tile-badge ${localState.audioEnabled ? 'live' : 'warn'}`;
+        localVideoBadge.textContent = localState.videoEnabled ? (localState.screenSharing ? 'مشاركة شاشة' : 'صورة شغالة') : 'صورة متوقفة';
+        localVideoBadge.className = `tile-badge ${localState.videoEnabled ? (localState.screenSharing ? 'share' : 'live') : 'warn'}`;
+        toggleAudioBtn.classList.toggle('active', localState.audioEnabled);
+        toggleVideoBtn.classList.toggle('active', localState.videoEnabled);
+        shareScreenBtn.classList.toggle('active', localState.screenSharing);
+        toggleAudioBtn.innerHTML = localState.audioEnabled ? '<i class="fas fa-microphone"></i> المايك' : '<i class="fas fa-microphone-slash"></i> المايك';
+        toggleVideoBtn.innerHTML = localState.videoEnabled ? '<i class="fas fa-video"></i> الكاميرا' : '<i class="fas fa-video-slash"></i> الكاميرا';
+        shareScreenBtn.innerHTML = localState.screenSharing ? '<i class="fas fa-desktop"></i> إيقاف المشاركة' : '<i class="fas fa-desktop"></i> مشاركة الشاشة';
+    }
+
+    function updateParticipantState(userId, label, className) {
+        const row = participantsList.querySelector(`[data-participant-user-id="${userId}"]`);
+        if (!row) return;
+        const badge = row.querySelector('[data-participant-state]');
+        if (!badge) return;
+        badge.textContent = label;
+        badge.className = `participant-state ${className || ''}`.trim();
+    }
+
+    function avatarMarkup(peer) {
+        if (peer.avatar) {
+            return `<div class="avatar-shell"><img src="${peer.avatar}" alt="${peer.name}"></div>`;
+        }
+        return `<div class="avatar-shell"><span>${(peer.name || '?').charAt(0).toUpperCase()}</span></div>`;
+    }
+
+    function tileMarkup(peer) {
+        return `
+            <article class="video-tile" data-remote-user-id="${peer.user_id}">
+                <button type="button" class="tile-pin" data-pin-toggle title="تثبيت هذا البث على الشاشة الكبيرة">
+                    <i class="fas fa-thumbtack"></i>
+                </button>
+                <video class="video-el" autoplay playsinline></video>
+                <div class="video-empty">${avatarMarkup(peer)}<div style="margin-top:12px;">جارٍ انتظار فيديو ${peer.name}</div></div>
+                <div class="tile-overlay"></div>
+                <div class="status-ribbon"><i class="fas fa-circle-nodes"></i> متصل</div>
+                <div class="tile-meta">
+                    <div class="tile-name">
+                        <strong>${peer.name}</strong>
+                        <span>${peer.role === 'teacher' ? 'المعلم' : 'الطالب'}</span>
+                    </div>
+                    <div class="tile-badges">
+                        <span class="tile-badge live" data-peer-audio>صوت شغال</span>
+                        <span class="tile-badge live" data-peer-video>صورة شغالة</span>
+                    </div>
+                </div>
+            </article>
+        `;
+    }
+
+    function ensureRemoteTile(peer) {
+        if (remoteTiles.has(peer.user_id)) return remoteTiles.get(peer.user_id);
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = tileMarkup(peer).trim();
+        const tile = wrapper.firstElementChild;
+        const pinBtn = tile.querySelector('[data-pin-toggle]');
+        if (pinBtn) {
+            pinBtn.addEventListener('click', function(event) {
+                event.stopPropagation();
+                const tileUserId = getTileUserId(tile);
+                pinnedStageUserId = pinnedStageUserId === tileUserId ? null : tileUserId;
+                updateGridCount();
+            });
+        }
+        tile.addEventListener('click', function() {
+            const tileUserId = getTileUserId(tile);
+            pinnedStageUserId = pinnedStageUserId === tileUserId ? null : tileUserId;
+            updateGridCount();
+        });
+        videoGrid.appendChild(tile);
+        remoteTiles.set(peer.user_id, tile);
+        updateGridCount();
+        updateParticipantState(peer.user_id, 'متصل', 'online');
+        return tile;
+    }
+
+    function removeRemoteTile(userId) {
+        const tile = remoteTiles.get(userId);
+        if (tile) {
+            tile.remove();
+            remoteTiles.delete(userId);
+            if (pinnedStageUserId === Number(userId)) {
+                pinnedStageUserId = null;
+            }
+            if (dominantSpeakerUserId === Number(userId)) {
+                dominantSpeakerUserId = null;
+            }
+            updateGridCount();
+        }
+        updateParticipantState(userId, 'بانتظار الدخول', '');
+    }
+
+    async function acquireCameraStream() {
+        stopStream(cameraStream);
+        const mediaResult = await acquireBestEffortStream();
+        cameraStream = mediaResult.stream;
+        localStream = cameraStream;
+        localVideo.srcObject = localStream;
+        localVideoFallback.style.display = 'none';
+        const hasAudio = localStream.getAudioTracks().length > 0;
+        const hasVideo = localStream.getVideoTracks().length > 0;
+        deviceStateBox.textContent = hasAudio && hasVideo
+            ? 'تم تفعيل الكاميرا والمايك محلياً بنجاح.'
+            : hasAudio
+                ? 'تم تفعيل المايك فقط. الكاميرا غير متاحة حالياً.'
+                : hasVideo
+                    ? 'تم تفعيل الكاميرا فقط. المايك غير متاح حالياً.'
+                    : 'تم إنشاء البث المحلي لكن بدون مسارات فعالة.';
+        roomNote.textContent = 'سيظهر المتصلون الجدد فور دخولهم، مع إعادة ترتيب البطاقات تلقائياً.';
+        localState.audioEnabled = hasAudio;
+        localState.videoEnabled = hasVideo;
+        localState.screenSharing = false;
+        updateLocalBadges();
+        broadcastPresence();
+        refreshDeviceDiagnostics();
+        return localStream;
+    }
+
+    function getPeerConnectionConfig() {
+        return {
+            iceServers: Array.isArray(iceServers) ? iceServers : [],
+            iceCandidatePoolSize: 2,
+            bundlePolicy: 'balanced',
+            rtcpMuxPolicy: 'require',
+            // unified-plan هو الافتراضي في المتصفحات الحديثة ويضمن إدارة مسارات الصوت/فيديو متسقة.
+            sdpSemantics: 'unified-plan',
+        };
+    }
+
+    function ensurePeerState(peer) {
+        if (peerConnections.has(peer.user_id)) {
+            return peerConnections.get(peer.user_id);
+        }
+        const state = {
+            pc: new RTCPeerConnection(getPeerConnectionConfig()),
+            makingOffer: false,
+            ignoreOffer: false,
+            isSettingRemoteAnswerPending: false,
+            polite: currentUserId > Number(peer.user_id),
+            lastIceRestartAt: 0,
+        };
+        peerConnections.set(peer.user_id, state);
+        peerMeta.set(peer.user_id, peer);
+
+        ensureRemoteTile(peer);
+        if (localStream) {
+            localStream.getTracks().forEach(function(track) {
+                state.pc.addTrack(track, localStream);
+            });
+        }
+
+        state.pc.onicecandidate = function(event) {
+            if (!event.candidate || !callSocket || callSocket.readyState !== WebSocket.OPEN) return;
+            callSocket.send(JSON.stringify({
+                action: 'signal',
+                target: peer.user_id,
+                payload: { candidate: event.candidate },
+            }));
+        };
+
+        state.pc.ontrack = function(event) {
+            const tile = ensureRemoteTile(peer);
+            const video = tile.querySelector('video');
+            video.srcObject = event.streams[0];
+            tile.querySelector('.video-empty').style.display = 'none';
+            updateParticipantState(peer.user_id, 'متصل', 'online');
+        };
+
+        state.pc.onconnectionstatechange = function() {
+            if (state.pc.connectionState === 'closed') {
+                removeRemoteTile(peer.user_id);
+            }
+            if (state.pc.connectionState === 'disconnected') {
+                updateParticipantState(peer.user_id, 'ضعيف الاتصال', 'muted');
+                requestPeerIceRestart(peer.user_id, state, 'ضعف الاتصال');
+                roomNote.textContent = `ضعف الاتصال مع ${peerMeta.get(peer.user_id)?.name || 'المشارك'}. يحاول النظام إعادة الربط...`;
+            }
+            if (state.pc.connectionState === 'failed') {
+                updateParticipantState(peer.user_id, 'يعيد الربط', 'muted');
+                requestPeerIceRestart(peer.user_id, state, 'فشل الربط');
+                roomNote.textContent = `فشل الاتصال مع ${peerMeta.get(peer.user_id)?.name || 'المشارك'}. يحاول النظام إعادة الربط عبر TURN server...`;
+            }
+            if (state.pc.connectionState === 'connected') {
+                updateParticipantState(peer.user_id, 'متصل', 'online');
+                roomNote.textContent = `تم إعادة الربط بنجاح مع ${peerMeta.get(peer.user_id)?.name || 'المشارك'}.`;
+            }
+        };
+
+        state.pc.onnegotiationneeded = async function() {
+            try {
+                if (!callSocket || callSocket.readyState !== WebSocket.OPEN) return;
+                state.makingOffer = true;
+                const offer = await state.pc.createOffer();
+                await state.pc.setLocalDescription(offer);
+                callSocket.send(JSON.stringify({
+                    action: 'signal',
+                    target: peer.user_id,
+                    payload: { description: state.pc.localDescription },
+                }));
+            } catch (error) {
+                console.warn('negotiationneeded failed', error);
+            } finally {
+                state.makingOffer = false;
+            }
+        };
+
+        return state;
+    }
+
+    async function syncPeerTracks(peer) {
+        const state = ensurePeerState(peer);
+        if (!localStream) return state;
+        const senders = state.pc.getSenders();
+        const trackIds = new Set(senders.filter(function(sender) { return sender.track; }).map(function(sender) { return sender.track.id; }));
+        localStream.getTracks().forEach(function(track) {
+            if (!trackIds.has(track.id)) {
+                state.pc.addTrack(track, localStream);
+            }
+        });
+        return state;
+    }
+
+    async function handleSignal(senderId, payload) {
+        const peer = peerMeta.get(senderId) || { user_id: senderId, name: `مشارك ${senderId}`, role: 'participant', avatar: '' };
+        const state = await syncPeerTracks(peer);
+        const pc = state.pc;
+
+        if (payload.description) {
+            const readyForOffer = !state.makingOffer && (pc.signalingState === 'stable' || state.isSettingRemoteAnswerPending);
+            const offerCollision = payload.description.type === 'offer' && !readyForOffer;
+            state.ignoreOffer = !state.polite && offerCollision;
+            if (state.ignoreOffer) {
+                return;
+            }
+            state.isSettingRemoteAnswerPending = payload.description.type === 'answer';
+            await pc.setRemoteDescription(new RTCSessionDescription(payload.description));
+            state.isSettingRemoteAnswerPending = false;
+            if (payload.description.type === 'offer') {
+                await pc.setLocalDescription(await pc.createAnswer());
+                callSocket.send(JSON.stringify({
+                    action: 'signal',
+                    target: senderId,
+                    payload: { description: pc.localDescription },
+                }));
+            }
+            const queuedCandidates = pendingIceCandidates.get(senderId) || [];
+            for (const candidate of queuedCandidates) {
+                try {
+                    await pc.addIceCandidate(candidate);
+                } catch (error) {
+                    console.warn('queued ice candidate rejected', error);
+                }
+            }
+            pendingIceCandidates.delete(senderId);
+        } else if (payload.candidate) {
+            if (!pc.remoteDescription) {
+                const queue = pendingIceCandidates.get(senderId) || [];
+                queue.push(new RTCIceCandidate(payload.candidate));
+                pendingIceCandidates.set(senderId, queue);
+                return;
+            }
+            try {
+                await pc.addIceCandidate(new RTCIceCandidate(payload.candidate));
+            } catch (error) {
+                if (!state.ignoreOffer) {
+                    console.warn('ice candidate rejected', error);
+                }
+            }
+        }
+    }
+
+    async function broadcastPresence() {
+        if (!callSocket || callSocket.readyState !== WebSocket.OPEN) return;
+        callSocket.send(JSON.stringify({
+            action: 'presence_state',
+            payload: localState,
+        }));
+    }
+
+    function updateRemotePresence(senderId, payload) {
+        const tile = remoteTiles.get(senderId);
+        if (!tile) return;
+        const audioBadge = tile.querySelector('[data-peer-audio]');
+        const videoBadge = tile.querySelector('[data-peer-video]');
+        if (audioBadge) {
+            audioBadge.textContent = payload.audioEnabled ? 'صوت شغال' : 'صوت مكتوم';
+            audioBadge.className = `tile-badge ${payload.audioEnabled ? 'live' : 'warn'}`;
+        }
+        if (videoBadge) {
+            const text = payload.screenSharing ? 'مشاركة شاشة' : (payload.videoEnabled ? 'صورة شغالة' : 'صورة متوقفة');
+            videoBadge.textContent = text;
+            videoBadge.className = `tile-badge ${payload.videoEnabled ? (payload.screenSharing ? 'share' : 'live') : 'warn'}`;
+        }
+        if (tile) {
+            tile.dataset.screenSharing = payload.screenSharing ? 'true' : 'false';
+            updateGridCount();
+        }
+        updateParticipantState(senderId, payload.audioEnabled || payload.videoEnabled ? 'متصل' : 'صامت', payload.audioEnabled || payload.videoEnabled ? 'online' : 'muted');
+    }
+
+    async function replaceOutgoingVideoTrack(newTrack, nextStream) {
+        localStream = nextStream;
+        localVideo.srcObject = localStream;
+        for (const state of peerConnections.values()) {
+            const sender = state.pc.getSenders().find(function(item) {
+                return item.track && item.track.kind === 'video';
+            });
+            if (sender) {
+                await sender.replaceTrack(newTrack);
+            } else if (localStream) {
+                state.pc.addTrack(newTrack, localStream);
+            }
+        }
+    }
+
+    async function toggleScreenShare() {
+        if (!localStream) return;
+        if (!localState.screenSharing) {
+            screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+            const screenTrack = screenStream.getVideoTracks()[0];
+            screenTrack.onended = async function() {
+                if (cameraStream) {
+                    await replaceOutgoingVideoTrack(cameraStream.getVideoTracks()[0], cameraStream);
+                    localState.screenSharing = false;
+                    updateLocalBadges();
+                    deviceStateBox.textContent = 'تم إيقاف مشاركة الشاشة والعودة إلى الكاميرا.';
+                    broadcastPresence();
+                }
+            };
+            await replaceOutgoingVideoTrack(screenTrack, screenStream);
+            localState.screenSharing = true;
+            deviceStateBox.textContent = 'تم تشغيل مشاركة الشاشة.';
+        } else if (cameraStream) {
+            await replaceOutgoingVideoTrack(cameraStream.getVideoTracks()[0], cameraStream);
+            localState.screenSharing = false;
+            deviceStateBox.textContent = 'تم إيقاف مشاركة الشاشة والعودة إلى الكاميرا.';
+        }
+        updateLocalBadges();
+        broadcastPresence();
+    }
+
+    if (localTile) {
+        const localPinBtn = localTile.querySelector('[data-pin-toggle]');
+        if (localPinBtn) {
+            localPinBtn.addEventListener('click', function(event) {
+                event.stopPropagation();
+                pinnedStageUserId = pinnedStageUserId === currentUserId ? null : currentUserId;
+                updateGridCount();
+            });
+        }
+        localTile.addEventListener('click', function() {
+            pinnedStageUserId = pinnedStageUserId === currentUserId ? null : currentUserId;
+            updateGridCount();
+        });
+    }
+
+    function scheduleSocketReconnect() {
+        if (hasRedirected || socketReconnectTimer) return;
+        socketReconnectAttempts += 1;
+        const delay = Math.min(8000, 1200 * socketReconnectAttempts);
+        socketReconnectTimer = window.setTimeout(function() {
+            socketReconnectTimer = null;
+            setupSocket();
+        }, delay);
+    }
+
+    function updateConnectedCount() {
+        const count = remoteTiles.size + 1;
+        roomNote.textContent = `عدد المتصلين الآن: ${count}. يتم تعديل تخطيط الشاشة تلقائياً.`;
+    }
+
+    async function setupSocket() {
+        const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+        callSocket = new WebSocket(`${protocol}://${window.location.host}${wsPath}`);
+
+        callSocket.addEventListener('open', function() {
+            socketReconnectAttempts = 0;
+            setTransportState('تم الربط المحلي المباشر', true);
+            updateConnectedCount();
+            if (callSocket && callSocket.readyState === WebSocket.OPEN) {
+                broadcastPresence();
+            }
+        });
+
+        callSocket.addEventListener('error', function(event) {
+            setTransportState('خطأ في قناة WebSocket', false);
+            roomNote.textContent = 'فشل اتصال WebSocket. تحقق من إعدادات القناة الحية أو المتصفح.';
+            console.warn('WebSocket error for live call:', event);
+        });
+
+        callSocket.addEventListener('close', function() {
+            setTransportState('انقطع الربط الحي', false);
+            scheduleSocketReconnect();
+        });
+
+        callSocket.addEventListener('message', async function(event) {
+            const data = JSON.parse(event.data);
+            if (data.type === 'room_state') {
+                for (const peer of data.peers || []) {
+                    peerMeta.set(peer.user_id, peer);
+                    await syncPeerTracks(peer);
+                }
+            }
+            if (data.type === 'peer_joined' && data.participant && data.participant.user_id !== currentUserId) {
+                peerMeta.set(data.participant.user_id, data.participant);
+                ensureRemoteTile(data.participant);
+                updateParticipantState(data.participant.user_id, 'متصل', 'online');
+                updateConnectedCount();
+                await syncPeerTracks(data.participant);
+            }
+            if (data.type === 'peer_left') {
+                removeRemoteTile(Number(data.user_id));
+                updateConnectedCount();
+            }
+            if (data.type === 'signal') {
+                await handleSignal(Number(data.sender_id), data.payload || {});
+            }
+            if (data.type === 'peer_presence') {
+                updateRemotePresence(Number(data.sender_id), data.payload || {});
+            }
+        });
+    }
+
+    async function initLocalMedia() {
+        try {
+            await acquireCameraStream();
+        } catch (error) {
+            console.error('media init failed', error);
+            const errorMessage = buildMediaErrorMessage(error);
+            localVideoFallback.innerHTML = `<div>${errorMessage}</div>`;
+            deviceStateBox.textContent = errorMessage;
+            roomNote.textContent = 'إذا كنت تستخدم رابطاً عادياً http خارج localhost فلن يسمح المتصفح بالكاميرا والمايك.';
+            localState.audioEnabled = false;
+            localState.videoEnabled = false;
+            localState.screenSharing = false;
+            updateLocalBadges();
+            refreshDeviceDiagnostics();
+        }
+    }
+
+    async function pollCallStatus() {
+        if (hasRedirected) return;
+        try {
+            const response = await fetch(statusUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            if (!response.ok) return;
+            const data = await response.json();
+            callStatusLabel.textContent = data.status_label || data.status;
+            callStateMessage.textContent = data.state_message || '';
+            if (data.connected_count !== undefined) {
+                roomNote.textContent = `عدد المتصلين الآن: ${data.connected_count}. يتم تعديل تخطيط الشاشة تلقائياً.`;
+            }
+            if (['ended', 'cancelled', 'rejected'].includes(data.status) || ['cancelled', 'rejected'].includes(data.participant_status)) {
+                hasRedirected = true;
+                if (window.eduverseToast) {
+                    window.eduverseToast(data.reason || 'تم إنهاء الاتصال.', 'info');
+                }
+                window.location.href = data.redirect_url || redirectUrl;
+            }
+        } catch (error) {
+            console.warn('call status polling failed', error);
+        }
+    }
+
+    toggleAudioBtn.addEventListener('click', function() {
+        if (!localStream) return;
+        if (!localStream.getAudioTracks().length) {
+            if (window.eduverseToast) {
+                window.eduverseToast('لا يوجد مايك متاح حالياً على هذا الجهاز.', 'warning');
+            }
+            return;
+        }
+        localState.audioEnabled = !localState.audioEnabled;
+        localStream.getAudioTracks().forEach(function(track) { track.enabled = localState.audioEnabled; });
+        deviceStateBox.textContent = localState.audioEnabled ? 'تم تشغيل المايك.' : 'تم كتم المايك.';
+        updateLocalBadges();
+        broadcastPresence();
+    });
+
+    toggleVideoBtn.addEventListener('click', function() {
+        if (!localStream) return;
+        if (!localStream.getVideoTracks().length) {
+            if (window.eduverseToast) {
+                window.eduverseToast('لا توجد كاميرا متاحة حالياً على هذا الجهاز.', 'warning');
+            }
+            return;
+        }
+        localState.videoEnabled = !localState.videoEnabled;
+        localStream.getVideoTracks().forEach(function(track) { track.enabled = localState.videoEnabled; });
+        deviceStateBox.textContent = localState.videoEnabled ? 'تم تشغيل الكاميرا.' : 'تم إيقاف الكاميرا.';
+        updateLocalBadges();
+        broadcastPresence();
+    });
+
+    shareScreenBtn.addEventListener('click', async function() {
+        try {
+            await toggleScreenShare();
+        } catch (error) {
+            console.warn('screen share failed', error);
+            if (window.eduverseToast) {
+                window.eduverseToast('تعذر بدء مشاركة الشاشة من هذا المتصفح حالياً.', 'warning');
+            }
+        }
+    });
+
+    retryMediaBtn.addEventListener('click', async function() {
+        stopStream(screenStream);
+        stopStream(cameraStream);
+        await initLocalMedia();
+        if (window.eduverseToast) {
+            window.eduverseToast('تمت إعادة تهيئة الكاميرا والمايك.', 'success');
+        }
+        for (const [userId, state] of peerConnections) {
+            const peer = peerMeta.get(userId);
+            if (peer) {
+                state.pc.close();
+                peerConnections.delete(userId);
+                await syncPeerTracks(peer);
+            }
+        }
+    });
+
+    leaveCallBtn.addEventListener('click', function() {
+        deviceStateBox.textContent = 'جارٍ الخروج من الغرفة...';
+        window.location.href = redirectUrl;
+    });
+
+    backToCallsLink.addEventListener('click', function() {
+        hasRedirected = true;
+    });
+
+    endCallForm.addEventListener('submit', async function(event) {
+        event.preventDefault();
+        const formData = new FormData(endCallForm);
+        try {
+            const response = await fetch(endCallForm.action, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': csrfToken,
+                },
+                body: formData,
+            });
+            const data = await response.json();
+            hasRedirected = true;
+            if (window.eduverseToast) {
+                window.eduverseToast('تم إنهاء الاتصال.', 'info');
+            }
+            window.location.href = data.redirect_url || redirectUrl;
+        } catch (error) {
+            window.location.href = redirectUrl;
+        }
+    });
+
+    heartbeatTimer = window.setInterval(function() {
+        if (document.hidden) return;
+        if (callSocket && callSocket.readyState === WebSocket.OPEN) {
+            callSocket.send(JSON.stringify({ action: 'heartbeat' }));
+        }
+    }, 20000);
+    statsTimer = window.setInterval(function() {
+        if (document.hidden) return;
+        refreshConnectionStats();
+    }, 4000);
+
+    updateLocalBadges();
+    refreshDeviceDiagnostics();
+    initLocalMedia().then(setupSocket);
+    refreshConnectionStats();
+    pollCallStatus();
+    statusTimer = window.setInterval(function() {
+        if (document.hidden) return;
+        pollCallStatus();
+    }, 5000);
+
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) {
+            refreshConnectionStats();
+            pollCallStatus();
+        }
+    });
+
+    window.addEventListener('beforeunload', function() {
+        [heartbeatTimer, statsTimer, statusTimer, socketReconnectTimer].forEach(function(timerId) {
+            if (timerId) window.clearInterval(timerId);
+        });
+        if (callSocket && callSocket.readyState === WebSocket.OPEN) {
+            callSocket.close();
+        }
+    });
+});
+</script>
+{% endblock %}

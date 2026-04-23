@@ -1,0 +1,50 @@
+{% extends 'layouts/dashboard_base.html' %}
+
+{% block title %}نتيجة التقييم - EduVerse{% endblock %}
+
+{% block dashboard_content %}
+<section class="dashboard-section">
+    <div class="section-header">
+        <div class="section-title"><i class="fas fa-chart-line"></i> نتيجة: {{ assessment.title }}</div>
+        <a href="{% url 'assessments:attempt_history' assessment.assessment_id %}" class="btn-dash btn-outline-dash">سجل المحاولات</a>
+    </div>
+
+    <div class="result-grid">
+        <div class="score-card">
+            <div class="big-score {% if attempt.passed %}ok{% else %}no{% endif %}">
+                {{ attempt.percentage|floatformat:1 }}%
+            </div>
+            <p>الدرجة: {{ attempt.score|default:0 }} / {{ attempt.max_score|default:0 }}</p>
+            <p>الحالة: {% if attempt.passed %}<strong class="ok">ناجح</strong>{% else %}<strong class="no">غير ناجح</strong>{% endif %}</p>
+            <p>الوقت المستغرق: {{ attempt.time_taken|default:0 }} ثانية</p>
+        </div>
+        <div class="answers-card">
+            <h3>مراجعة الإجابات</h3>
+            <ul>
+                {% for answer in answers %}
+                    <li>
+                        <div class="q">{{ forloop.counter }}. {{ answer.question.question_text|truncatechars:100 }}</div>
+                        <div class="state {% if answer.is_correct %}ok{% elif answer.is_correct == False %}no{% else %}pending{% endif %}">
+                            {% if answer.is_correct %}صحيحة{% elif answer.is_correct == False %}خاطئة{% else %}بانتظار التصحيح{% endif %}
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</section>
+
+<style>
+.result-grid { display:grid; grid-template-columns: 330px 1fr; gap:16px; }
+.score-card, .answers-card { border:1px solid var(--dash-border); border-radius:14px; background:linear-gradient(165deg, rgba(19,35,61,.96), rgba(9,20,36,.96)); padding:16px; }
+.big-score { font-size:2.4rem; font-weight:800; }
+.big-score.ok, .ok { color:#34d399; }
+.big-score.no, .no { color:#f87171; }
+.answers-card ul { list-style:none; margin:0; padding:0; display:grid; gap:8px; }
+.answers-card li { display:flex; justify-content:space-between; gap:10px; border:1px solid rgba(148,163,184,.24); border-radius:10px; padding:8px 10px; }
+.q { color:#dbeafe; }
+.state { font-weight:700; white-space:nowrap; }
+.pending { color:#fbbf24; }
+@media (max-width: 900px){ .result-grid { grid-template-columns:1fr; } }
+</style>
+{% endblock %}

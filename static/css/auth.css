@@ -1,0 +1,472 @@
+/* =========================================
+   EduVerse Ultra-Modern Auth (Screenshot Match)
+   ========================================= */
+
+/* Force Dark Theme Variables for Auth Pages */
+:root {
+    --auth-bg-dark: #151725;     /* Main background behind the card */
+    --auth-card-bg: #1B1E2D;     /* The form side background */
+    --auth-input-bg: #222638;    /* Input background */
+    --auth-input-border: #2D3246; /* Input border */
+    --auth-text-main: #FFFFFF;
+    --auth-text-muted: #8F9BB3;
+    --auth-primary: #6366F1;     /* Primary Purple */
+    --auth-primary-hover: #4F46E5;
+    --auth-gradient: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+    --auth-radius: 10px;         /* Standard rounded corners from image */
+    
+    /* Font specifically for Arabic content if needed, though inherits from body */
+}
+
+body {
+    background-color: var(--auth-bg-dark); /* Removed !important to allow toggle */
+    font-family: 'Tajawal', sans-serif;
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.3s ease;
+}
+
+/* -------------------------------------------
+   Main Card Container
+   ------------------------------------------- */
+.auth-main {
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    background-color: var(--auth-bg-dark);
+    transition: background-color 0.3s ease;
+}
+
+/* Light Mode Overrides for Auth */
+[data-theme="light"] body,
+[data-theme="light"] .auth-main {
+    background-color: #F3F4F6; /* Light Gray Background */
+}
+
+[data-theme="light"] .auth-wrapper {
+    background: #FFFFFF;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .auth-form-side {
+    background-color: #FFFFFF;
+    color: #1F2937;
+}
+
+[data-theme="light"] .auth-header h2 {
+    color: #111827;
+}
+
+[data-theme="light"] .form-input {
+    background: #F9FAFB;
+    border-color: #E5E7EB;
+    color: #1F2937;
+}
+
+[data-theme="light"] .form-input::placeholder {
+    color: #9CA3AF;
+}
+
+[data-theme="light"] .role-selector-segment {
+    background: #F3F4F6;
+    border-color: #E5E7EB;
+}
+
+[data-theme="light"] .role-tab {
+    color: #6B7280;
+}
+
+[data-theme="light"] .role-tab.active {
+    background: #FFFFFF;
+    color: #4F46E5;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+[data-theme="light"] .form-label {
+    color: #4B5563;
+}
+
+/* Back to Home Button */
+.btn-back-home {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 10px 20px;
+    border-radius: 30px;
+    color: var(--auth-text-main);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    z-index: 100;
+}
+
+[data-theme="light"] .btn-back-home {
+    background: rgba(255, 255, 255, 0.8);
+    color: #1F2937;
+    border-color: #E5E7EB;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+.btn-back-home:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+
+[data-theme="light"] .btn-back-home:hover {
+    background: #FFFFFF;
+}
+
+.auth-wrapper {
+    display: flex;
+    width: 100%;
+    max-width: 1100px;
+    background: var(--auth-card-bg);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    min-height: 700px;
+}
+
+/* -------------------------------------------
+   Right Side: FORM (Dark)
+   ------------------------------------------- */
+.auth-form-side {
+    flex: 1;
+    padding: 50px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background-color: var(--auth-card-bg);
+    color: var(--auth-text-main);
+}
+
+.auth-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.auth-header h2 {
+    font-size: 2rem;
+    color: white;
+    margin-bottom: 10px;
+    font-weight: 700;
+}
+
+.auth-header p {
+    color: var(--auth-text-muted);
+    font-size: 0.95rem;
+}
+
+/* Role Selector (Tabs) */
+.role-selector-segment {
+    background: #151823; /* Darker than card */
+    padding: 5px;
+    border-radius: 12px;
+    display: flex;
+    margin-bottom: 25px;
+    border: 1px solid var(--auth-input-border);
+}
+
+.role-tab {
+    flex: 1;
+    text-align: center;
+    padding: 10px;
+    border-radius: 8px;
+    color: var(--auth-text-muted);
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.role-tab.active {
+    background-color: #1F2231; /* Slightly lighter active state */
+    color: white;
+    /* In the screenshot, active might be just lighter bg or blocked */
+    background: #232738;
+}
+
+/* Inputs */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 8px;
+    color: #D1D5DB;
+    font-size: 0.9rem;
+    text-align: right;
+}
+
+.input-wrapper {
+    position: relative;
+}
+
+.form-input {
+    width: 100%;
+    background: var(--auth-input-bg);
+    border: 1px solid var(--auth-input-border);
+    padding: 14px 15px; /* RTL aware */
+    border-radius: 10px;
+    color: white;
+    font-size: 1rem;
+    font-family: inherit;
+    transition: all 0.3s ease;
+    text-align: right; /* RTL */
+}
+
+.form-input::placeholder {
+    color: #4B5563;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--auth-primary);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+/* Buttons */
+.btn-primary {
+    width: 100%;
+    padding: 14px;
+    background: var(--auth-primary); /* Solid purple/blue from screenshot */
+    background: linear-gradient(90deg, #667EEA 0%, #764BA2 100%); /* Or solid matches screenshot better? Screenshot looks like solid or subtle gradient */
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    margin-top: 10px;
+}
+
+.btn-primary:hover {
+    opacity: 0.9;
+}
+
+/* Social Buttons */
+.social-actions {
+    margin-top: 25px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.social-btn {
+    width: 100%;
+    padding: 12px;
+    background: transparent;
+    border: 1px solid var(--auth-input-border);
+    border-radius: 10px;
+    color: var(--auth-text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.social-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: white;
+}
+
+/* Links */
+a {
+    color: var(--auth-primary);
+    text-decoration: none;
+}
+a:hover {
+    text-decoration: underline;
+}
+
+/* -------------------------------------------
+   Left Side: VISUAL (Gradient)
+   ------------------------------------------- */
+.auth-visual-side {
+    flex: 1;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); /* Example purple gradient */
+    padding: 60px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    color: white;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Circles/Shapes Overlay */
+.auth-visual-side::before {
+    content: '';
+    position: absolute;
+    top: -50px;
+    right: -50px;
+    width: 300px;
+    height: 300px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 50%;
+}
+
+.auth-visual-side::after {
+    content: '';
+    position: absolute;
+    bottom: -50px;
+    left: -50px;
+    width: 250px;
+    height: 250px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 50%;
+}
+
+.visual-title {
+    font-size: 2.2rem;
+    font-weight: 800;
+    margin-bottom: 15px;
+    position: relative;
+    z-index: 2;
+}
+
+.visual-text {
+    font-size: 1.1rem;
+    margin-bottom: 40px;
+    opacity: 0.9;
+    position: relative;
+    z-index: 2;
+}
+
+.feature-list {
+    text-align: right;
+    display: inline-block;
+    position: relative;
+    z-index: 2;
+}
+
+.feature-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 15px;
+    font-size: 1rem;
+}
+
+.check-icon {
+    background: #FFD700;
+    color: #000;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+}
+
+/* Checkbox */
+input[type="checkbox"] {
+    accent-color: var(--auth-primary);
+    width: 16px; 
+    height: 16px;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .auth-wrapper {
+        flex-direction: column;
+        max-width: 500px;
+    }
+    .auth-visual-side {
+        display: none;
+    }
+    .auth-form-side {
+        padding: 30px;
+    }
+}
+
+/* =========================================
+   Animated Glass Bubbles (Blue-White Glassy)
+   ========================================= */
+.glass-bubbles {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1; /* Ensure it's above the background but below text/content if needed */
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    pointer-events: none;
+}
+
+.glass-bubbles li {
+    position: absolute;
+    display: block;
+    list-style: none;
+    width: 20px;
+    height: 20px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.01)); /* Pure Glass */
+    border: 1px solid rgba(255, 255, 255, 0.18); /* Icy Border */
+    bottom: -150px;
+    border-radius: 50%;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15); /* Soft Blue Shadow */
+    animation: wobble-rise 25s infinite linear; 
+}
+
+/* Individual Bubble Variations (Size, Pos, Delay, Duration) */
+.glass-bubbles li:nth-child(1) { left: 10%; width: 80px; height: 80px; animation-delay: 0s; }
+.glass-bubbles li:nth-child(2) { left: 20%; width: 40px; height: 40px; animation-delay: 2s; animation-duration: 12s; }
+.glass-bubbles li:nth-child(3) { left: 25%; width: 60px; height: 60px; animation-delay: 4s; }
+.glass-bubbles li:nth-child(4) { left: 40%; width: 60px; height: 60px; animation-delay: 0s; animation-duration: 18s; }
+.glass-bubbles li:nth-child(5) { left: 65%; width: 50px; height: 50px; animation-delay: 0s; }
+.glass-bubbles li:nth-child(6) { left: 75%; width: 110px; height: 110px; animation-delay: 3s; }
+.glass-bubbles li:nth-child(7) { left: 35%; width: 150px; height: 150px; animation-delay: 7s; }
+.glass-bubbles li:nth-child(8) { left: 50%; width: 25px; height: 25px; animation-delay: 15s; animation-duration: 45s; }
+.glass-bubbles li:nth-child(9) { left: 20%; width: 35px; height: 35px; animation-delay: 2s; animation-duration: 35s; }
+.glass-bubbles li:nth-child(10) { left: 85%; width: 150px; height: 150px; animation-delay: 0s; animation-duration: 11s; }
+
+/* Wobble & Rise Animation */
+@keyframes wobble-rise {
+    0% {
+        transform: translateY(0) translateX(0) rotate(0deg);
+        opacity: 0;
+        border-radius: 50%;
+    }
+    10% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 1;
+        transform: translateY(-50vh) translateX(30px) rotate(180deg);
+        border-radius: 45% 55% 60% 40% / 55% 45% 40% 60%; /* Organic Wobble */
+    }
+    100% {
+        transform: translateY(-110vh) translateX(-20px) rotate(360deg);
+        opacity: 0;
+        border-radius: 50%;
+    }
+}
+

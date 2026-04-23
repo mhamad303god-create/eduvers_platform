@@ -1,0 +1,49 @@
+{% extends 'layouts/dashboard_base.html' %}
+
+{% block title %}أسئلة التقييم - EduVerse{% endblock %}
+
+{% block dashboard_content %}
+<section class="dashboard-section">
+    <div class="section-header">
+        <div class="section-title"><i class="fas fa-question-circle"></i> أسئلة: {{ assessment.title }}</div>
+        <div style="display:flex; gap:8px;">
+            <a href="{% url 'assessments:teacher_assessment_list' %}" class="btn-dash btn-outline-dash">رجوع</a>
+            <a href="{% url 'assessments:question_add' assessment.assessment_id %}" class="btn-dash btn-primary-dash">إضافة سؤال</a>
+        </div>
+    </div>
+
+    {% if questions %}
+        <div class="q-grid">
+            {% for question in questions %}
+                <article class="q-card">
+                    <div class="q-tags">
+                        <span>#{{ question.order_index }}</span>
+                        <span>{{ question.get_question_type_display }}</span>
+                        <span>{{ question.points }} نقطة</span>
+                    </div>
+                    <h4>{{ question.question_text }}</h4>
+                    {% if question.explanation %}
+                        <p class="exp">{{ question.explanation|truncatechars:120 }}</p>
+                    {% endif %}
+                    <div class="q-actions">
+                        <a href="{% url 'assessments:question_edit' assessment.assessment_id question.question_id %}" class="btn-dash btn-outline-dash" style="padding:6px 10px;">تعديل</a>
+                        <a href="{% url 'assessments:question_delete' assessment.assessment_id question.question_id %}" class="btn-dash" style="padding:6px 10px; background:#dc2626; color:#fff;">حذف</a>
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div style="text-align:center; color:var(--dash-text-muted); padding:40px;">لا توجد أسئلة بعد.</div>
+    {% endif %}
+</section>
+
+<style>
+.q-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:12px; }
+.q-card { border:1px solid var(--dash-border); border-radius:12px; background:rgba(15,23,42,.65); padding:12px; }
+.q-tags { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px; }
+.q-tags span { font-size:.75rem; border:1px solid rgba(148,163,184,.3); color:#cfe3f7; border-radius:999px; padding:3px 8px; }
+.q-card h4 { margin:0 0 8px; color:#fff; line-height:1.6; }
+.exp { margin:0 0 10px; color:var(--dash-text-muted); }
+.q-actions { display:flex; gap:8px; }
+</style>
+{% endblock %}

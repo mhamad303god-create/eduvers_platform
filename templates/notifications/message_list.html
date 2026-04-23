@@ -1,0 +1,313 @@
+{% extends 'layouts/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}الرسائل - EduVerse{% endblock %}
+
+{% block extra_head %}
+<style>
+.message-list-shell { border:1px solid var(--dash-border); border-radius:26px; padding:24px; background:linear-gradient(180deg, rgba(15,23,42,.9), rgba(17,24,39,.96)); box-shadow:0 24px 48px rgba(2,6,23,.24); }
+.message-summary { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:14px; margin-bottom:18px; }
+.summary-tile { padding:16px 18px; border-radius:20px; border:1px solid rgba(148,163,184,.14); background:rgba(15,23,42,.52); }
+.summary-tile:nth-child(1) { border-color:rgba(56,189,248,.2); }
+.summary-tile:nth-child(2) { border-color:rgba(34,197,94,.2); }
+.summary-tile:nth-child(3) { border-color:rgba(148,163,184,.18); }
+.summary-tile strong { display:block; margin-bottom:8px; color:#fff; }
+.summary-tile span { color:#cbd5e1; font-weight:800; }
+.message-list-grid { display:grid; gap:16px; }
+.message-card { padding:20px; border-radius:22px; border:1px solid rgba(96,165,250,.12); background:linear-gradient(180deg, rgba(15,23,42,.46), rgba(15,23,42,.28)); box-shadow:0 18px 34px rgba(2,6,23,.16); }
+.message-card.unread { border-color:rgba(14,165,233,.26); box-shadow:0 22px 40px rgba(14,165,233,.08); }
+.message-card.has-attachment { border-color:rgba(168,85,247,.24); }
+.message-card-top { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; }
+.message-card-top h3 { margin:0 0 8px; }
+.message-sender, .message-date { color:var(--dash-text-muted); }
+.message-preview { margin:14px 0 18px; color:#dbe7f5; line-height:1.9; }
+.message-pill { padding:8px 12px; border-radius:999px; background:rgba(14,165,233,.14); border:1px solid rgba(14,165,233,.2); color:#dbeafe; font-weight:800; white-space:nowrap; }
+.message-pill.read { background:rgba(148,163,184,.12); border-color:rgba(148,163,184,.16); color:#cbd5e1; }
+.message-meta-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+.attachment-chip { display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:999px; background:rgba(168,85,247,.16); border:1px solid rgba(168,85,247,.24); color:#f3e8ff; font-weight:800; }
+.message-actions { display:flex; gap:10px; flex-wrap:wrap; }
+.empty-state { padding:36px 24px; text-align:center; color:var(--dash-text-muted); }
+@media (max-width: 760px) { .message-summary { grid-template-columns:1fr; } }
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<section class="dashboard-section">
+    <div class="section-header">
+        <div class="section-title"><i class="fas fa-envelope"></i> الرسائل المستلمة</div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <a href="{% url 'notifications:message_list' %}" class="btn-dash {% if filter_mode != 'unread' %}btn-primary-dash{% else %}btn-outline-dash{% endif %}">
+                <i class="fas fa-inbox"></i> كل الرسائل
+            </a>
+            <a href="{% url 'notifications:message_list' %}?filter=unread" class="btn-dash {% if filter_mode == 'unread' %}btn-primary-dash{% else %}btn-outline-dash{% endif %}">
+                <i class="fas fa-envelope-circle-check"></i> غير المقروء فقط
+            </a>
+            <a href="{% url 'notifications:sent_messages' %}" class="btn-dash btn-outline-dash">
+                <i class="fas fa-paper-plane"></i> الرسائل المرسلة
+            </a>
+            <form method="post" action="{% url 'notifications:mark_all_messages_read' %}" id="markAllMessagesReadForm" data-mark-all-messages>
+                {% csrf_token %}
+                <button type="submit" class="btn-dash btn-outline-dash" id="markAllMessagesReadButton">
+                    <i class="fas fa-check-double"></i> تعليم الكل كمقروء
+                </button>
+            </form>
+            <a href="{% url 'notifications:compose_message' %}" class="btn-dash btn-primary-dash">
+                <i class="fas fa-plus"></i> رسالة جديدة
+            </a>
+        </div>
+    </div>
+
+    <div class="message-list-shell" id="messageListShell" data-message-feed-url="{% url 'notifications:message_activity_feed' %}" data-total-messages="{{ total_inbox_count }}">
+        <div class="message-summary">
+            <div class="summary-tile">
+                <strong>إجمالي الرسائل</strong>
+                <span>{{ total_inbox_count }}</span>
+            </div>
+            <div class="summary-tile">
+                <strong>غير المقروء</strong>
+                <span>{{ unread_inbox_count }}</span>
+            </div>
+            <div class="summary-tile">
+                <strong>المقروء</strong>
+                <span>{{ read_inbox_count }}</span>
+            </div>
+        </div>
+
+        {% if inbox_messages %}
+            <div class="message-list-grid" id="messageListGrid">
+                {% for message in inbox_messages %}
+                    <article class="message-card {% if not message.is_read %}unread{% endif %} {% if message.attachment_file or message.attachment_urls %}has-attachment{% endif %}" data-message-id="{{ message.message_id }}">
+                        <div class="message-card-top">
+                            <div>
+                                <h3>{{ message.subject|default:"بدون موضوع" }}</h3>
+                                <div class="message-sender">{{ message.sender.get_full_name|default:message.sender.email }}</div>
+                            </div>
+                            <div class="message-pill {% if message.is_read %}read{% endif %}">
+                                {% if message.is_read %}مقروء{% else %}جديد{% endif %}
+                            </div>
+                        </div>
+                        <div class="message-meta-row">
+                            <div class="message-date">{{ message.created_at|date:"Y-m-d H:i" }}</div>
+                            {% if message.attachment_file or message.attachment_urls %}
+                            <div class="attachment-chip"><i class="fas fa-paperclip"></i> يحتوي على مرفق</div>
+                            {% endif %}
+                        </div>
+                        <p class="message-preview">{{ message.content|truncatechars:180 }}</p>
+                        <div class="message-actions">
+                            <a href="{% url 'notifications:message_detail' message.message_id %}" class="btn-dash btn-outline-dash">
+                                <i class="fas fa-eye"></i> عرض
+                            </a>
+                            <a href="{% url 'notifications:reply_message' message.message_id %}" class="btn-dash btn-primary-dash">
+                                <i class="fas fa-reply"></i> رد
+                            </a>
+                            <a href="{% url 'notifications:forward_message' message.message_id %}" class="btn-dash btn-outline-dash">
+                                <i class="fas fa-share"></i> إعادة إرسال
+                            </a>
+                            {% if message.attachment_file %}
+                            <a href="{% url 'notifications:download_message_attachment' message.message_id %}" class="btn-dash btn-outline-dash">
+                                <i class="fas fa-download"></i> تنزيل المرفق
+                            </a>
+                            {% endif %}
+                            <form method="post" action="{% url 'notifications:delete_message' message.message_id %}" data-delete-message-form>
+                                {% csrf_token %}
+                                <button type="submit" class="btn-dash btn-outline-dash" style="color:#fecaca; border-color:rgba(248,113,113,.24);">
+                                    <i class="fas fa-trash"></i> حذف
+                                </button>
+                            </form>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                {% if filter_mode == 'unread' and total_inbox_count > 0 %}
+                    لا توجد رسائل غير مقروءة حالياً. انتقل إلى <strong>كل الرسائل</strong> لمشاهدة الرسائل المقروءة.
+                {% else %}
+                    لا توجد رسائل حالياً.
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const shell = document.querySelector('[data-message-feed-url]');
+    const grid = document.getElementById('messageListGrid');
+    const markAllForm = document.getElementById('markAllMessagesReadForm');
+    if (!shell) return;
+
+    const feedUrl = shell.dataset.messageFeedUrl;
+    const knownIds = new Set(Array.from((grid || document).querySelectorAll('[data-message-id]')).map((node) => node.dataset.messageId));
+    const summaryTiles = shell.querySelectorAll('.summary-tile span');
+    const emptyStateClass = 'message-list-empty-state';
+
+    function updateSummary(total, unread, read) {
+        if (summaryTiles.length < 3) return;
+        summaryTiles[0].textContent = total;
+        summaryTiles[1].textContent = unread;
+        summaryTiles[2].textContent = read;
+    }
+
+    function currentCounts() {
+        const cards = grid ? Array.from(grid.querySelectorAll('[data-message-id]')) : [];
+        const total = cards.length;
+        const unread = cards.filter((card) => card.classList.contains('unread')).length;
+        return { total, unread, read: Math.max(0, total - unread) };
+    }
+
+    function ensureEmptyState() {
+        if (!shell) return;
+        let emptyState = shell.querySelector(`.${emptyStateClass}`);
+        const total = grid ? grid.querySelectorAll('[data-message-id]').length : 0;
+        if (total === 0) {
+            if (!emptyState) {
+                emptyState = document.createElement('div');
+                emptyState.className = `empty-state ${emptyStateClass}`;
+                emptyState.textContent = 'لا توجد رسائل حالياً.';
+                shell.appendChild(emptyState);
+            }
+        } else if (emptyState) {
+            emptyState.remove();
+        }
+    }
+
+    function buildCard(message) {
+        const article = document.createElement('article');
+        article.className = `message-card ${message.is_read ? '' : 'unread'} ${message.has_attachment ? 'has-attachment' : ''}`.trim();
+        article.dataset.messageId = message.id;
+        article.innerHTML = `
+            <div class="message-card-top">
+                <div>
+                    <h3>${message.subject}</h3>
+                    <div class="message-sender">${message.sender_name}</div>
+                </div>
+                <div class="message-pill ${message.is_read ? 'read' : ''}">
+                    ${message.is_read ? 'مقروء' : 'جديد'}
+                </div>
+            </div>
+            <div class="message-meta-row">
+                <div class="message-date">${message.created_at}</div>
+                ${message.has_attachment ? '<div class="attachment-chip"><i class="fas fa-paperclip"></i> يحتوي على مرفق</div>' : ''}
+            </div>
+            <p class="message-preview">${message.preview}</p>
+            <div class="message-actions">
+                <a href="${message.detail_url}" class="btn-dash btn-outline-dash"><i class="fas fa-eye"></i> عرض</a>
+                <a href="${message.reply_url}" class="btn-dash btn-primary-dash"><i class="fas fa-reply"></i> رد</a>
+                <a href="${message.forward_url || `/notifications/messages/${message.id}/forward/`}" class="btn-dash btn-outline-dash"><i class="fas fa-share"></i> إعادة إرسال</a>
+                ${message.download_url ? `<a href="${message.download_url}" class="btn-dash btn-outline-dash"><i class="fas fa-download"></i> تنزيل المرفق</a>` : ''}
+            </div>
+        `;
+        return article;
+    }
+
+    async function pollMessages() {
+        if (!grid) return;
+        try {
+            const response = await fetch(feedUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            if (!response.ok) return;
+            const data = await response.json();
+            (data.messages || []).forEach((message) => {
+                const key = String(message.id);
+                if (knownIds.has(key)) return;
+                knownIds.add(key);
+                grid.insertBefore(buildCard(message), grid.firstChild);
+            });
+            const counts = currentCounts();
+            updateSummary(data.total_count || counts.total, data.unread_count || counts.unread, (data.total_count || counts.total) - (data.unread_count || counts.unread));
+            ensureEmptyState();
+        } catch (error) {
+            console.warn('message feed polling failed', error);
+        }
+    }
+
+    async function submitAjaxForm(form, onSuccess) {
+        const formData = new FormData(form);
+        const response = await fetch(form.action, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            body: formData
+        });
+        const payload = await response.json();
+        if (!response.ok || payload.success === false) {
+            throw new Error(payload.error || payload.message || 'تعذر تنفيذ العملية.');
+        }
+        onSuccess(payload);
+    }
+
+    if (grid) {
+        grid.querySelectorAll('[data-delete-message-form]').forEach(function(form) {
+            form.addEventListener('submit', async function(event) {
+                event.preventDefault();
+                const card = form.closest('[data-message-id]');
+                try {
+                    await submitAjaxForm(form, function() {
+                        if (card) {
+                            knownIds.delete(card.dataset.messageId);
+                            card.remove();
+                        }
+                        const counts = currentCounts();
+                        updateSummary(counts.total, counts.unread, counts.read);
+                        ensureEmptyState();
+                        if (window.eduverseToast) {
+                            window.eduverseToast('تم حذف الرسالة من قائمتك.', 'success');
+                        }
+                    });
+                } catch (error) {
+                    if (window.eduverseToast) {
+                        window.eduverseToast(error.message || 'تعذر حذف الرسالة.', 'error');
+                    }
+                }
+            });
+        });
+    }
+
+    if (markAllForm) {
+        const messageListShell = document.getElementById('messageListShell');
+        markAllForm.addEventListener('submit', async function(event) {
+            const totalMessages = Number(messageListShell?.dataset.totalMessages || 0);
+            if (totalMessages === 0) {
+                event.preventDefault();
+                if (window.eduverseToast) {
+                    window.eduverseToast('لا توجد رسائل لتعليمها كمقروءة.', 'warning');
+                } else {
+                    alert('لا توجد رسائل لتعليمها كمقروءة.');
+                }
+                return;
+            }
+            event.preventDefault();
+            try {
+                await submitAjaxForm(markAllForm, function(payload) {
+                    if (grid) {
+                        grid.querySelectorAll('.message-card.unread').forEach(function(card) {
+                            card.classList.remove('unread');
+                            const pill = card.querySelector('.message-pill');
+                            if (pill) {
+                                pill.classList.add('read');
+                                pill.textContent = 'مقروء';
+                            }
+                        });
+                    }
+                    const counts = currentCounts();
+                    updateSummary(counts.total, 0, counts.total);
+                    if (window.eduverseToast) {
+                        window.eduverseToast(payload.updated_count ? `تم تعليم ${payload.updated_count} رسالة كمقروءة.` : 'كل الرسائل مقروءة بالفعل.', 'success');
+                    }
+                });
+            } catch (error) {
+                if (window.eduverseToast) {
+                    window.eduverseToast(error.message || 'تعذر تنفيذ العملية.', 'error');
+                }
+            }
+        });
+    }
+
+    setInterval(pollMessages, 7000);
+});
+</script>
+{% endblock %}

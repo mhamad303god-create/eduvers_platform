@@ -1,0 +1,583 @@
+{% extends 'layouts/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Book a Session - {{ teacher.user.get_full_name }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.5/main.min.css">
+<style>
+.booking-container {
+    max-width: 1400px;
+    margin: 40px auto;
+    padding: 0 20px;
+}
+
+.booking-grid {
+    display: grid;
+    grid-template-columns: 350px 1fr;
+    gap: 30px;
+    margin-top: 30px;
+}
+
+.teacher-card {
+    background: var(--card-color);
+    border-radius: var(--radius-lg);
+    padding: 25px;
+    box-shadow: var(--shadow-lg);
+    position: sticky;
+    top: 100px;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+}
+
+.teacher-avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin: 0 auto 20px;
+    display: block;
+    border: 4px solid var(--primary-color);
+}
+
+.teacher-name {
+    font-size: 22px;
+    font-weight: 700;
+    text-align: center;
+    color: var(--text-primary);
+    margin-bottom: 10px;
+}
+
+.teacher-title {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+.teacher-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 15px;
+    background: var(--bg-color);
+    border-radius: var(--radius-md);
+}
+
+.stat-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.stat-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 5px;
+}
+
+.price-tag {
+    background: var(--primary-gradient);
+    color: white;
+    padding: 15px;
+    border-radius: var(--radius-md);
+    text-align: center;
+    margin: 20px 0;
+}
+
+.price-amount {
+    font-size: 32px;
+    font-weight: 800;
+}
+
+.price-period {
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+.calendar-section {
+    background: var(--card-color);
+    border-radius: var(--radius-lg);
+    padding: 30px;
+    box-shadow: var(--shadow-lg);
+}
+
+#calendar {
+    margin-top: 20px;
+}
+
+.fc {
+    --fc-border-color: var(--border-color);
+    --fc-button-bg-color: var(--primary-color);
+    --fc-button-border-color: var(--primary-color);
+    --fc-button-hover-bg-color: var(--primary-hover);
+    --fc-button-hover-border-color: var(--primary-hover);
+    --fc-button-active-bg-color: var(--primary-active);
+    --fc-button-active-border-color: var(--primary-active);
+    --fc-event-bg-color: var(--primary-color);
+    --fc-event-border-color: var(--primary-color);
+    --fc-today-bg-color: var(--primary-color-light);
+}
+
+.fc .fc-button {
+    text-transform: capitalize;
+    font-weight: 600;
+}
+
+.fc-event {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.fc-event:hover {
+    transform: scale(1.05);
+    box-shadow: var(--shadow-md);
+}
+
+.available-slot {
+    background: var(--success-color) !important;
+    border-color: var(--success-color) !important;
+}
+
+.booked-slot {
+    background: var(--error-color) !important;
+    border-color: var(--error-color) !important;
+    opacity: 0.5;
+}
+
+.booking-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    padding: 20px;
+}
+
+.booking-modal.show {
+    display: flex;
+}
+
+.modal-content {
+    background: var(--card-color);
+    border-radius: var(--radius-lg);
+    padding: 35px;
+    max-width: 500px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.modal-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.close-modal {
+    font-size: 28px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+    line-height: 1;
+}
+
+.close-modal:hover {
+    color: var(--text-primary);
+}
+
+.session-details {
+    background: var(--bg-color);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    margin-bottom: 25px;
+}
+
+.detail-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.detail-item:last-child {
+    border-bottom: none;
+}
+
+.detail-icon {
+    width: 40px;
+    height: 40px;
+    background: var(--primary-color-light);
+    color: var(--primary-color);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.detail-text {
+    flex: 1;
+}
+
+.detail-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 3px;
+}
+
+.detail-value {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.form-control {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    transition: all 0.3s ease;
+    background: var(--input-bg);
+    color: var(--text-primary);
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px var(--primary-color-light);
+}
+
+.btn-confirm {
+    width: 100%;
+    padding: 16px;
+    background: var(--primary-gradient);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-confirm:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(26, 115, 232, 0.4);
+}
+
+.btn-confirm:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+@media (max-width: 968px) {
+    .booking-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .teacher-card {
+        position: static;
+        max-height: none;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="booking-container">
+    <div class="page-header">
+        <h1>📅 Book a Session</h1>
+        <p>Select an available time slot to book your session</p>
+    </div>
+
+    <div class="booking-grid">
+        <!-- Teacher Info -->
+        <div class="teacher-card">
+            {% if teacher.avatar %}
+            <img src="{{ teacher.avatar.url }}" alt="{{ teacher.user.get_full_name }}" class="teacher-avatar">
+            {% else %}
+            <div class="teacher-avatar" style="background: var(--primary-gradient);"></div>
+            {% endif %}
+            
+            <h2 class="teacher-name">{{ teacher.user.get_full_name }}</h2>
+            <p class="teacher-title">{{ teacher.get_expertise_display|default:"Expert Teacher" }}</p>
+
+            <div class="teacher-stats">
+                <div class="stat-item">
+                    <div class="stat-value">{{ teacher.total_students }}</div>
+                    <div class="stat-label">Students</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">{{ teacher.total_sessions }}</div>
+                    <div class="stat-label">Sessions</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">{{ teacher.rating|floatformat:1 }}</div>
+                    <div class="stat-label">Rating</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">{{ teacher.response_time }}</div>
+                    <div class="stat-label">Response</div>
+                </div>
+            </div>
+
+            <div class="price-tag">
+                <div class="price-amount">{{ teacher.hourly_rate }} SAR</div>
+                <div class="price-period">per hour</div>
+            </div>
+
+            <div style="padding: 15px; background: var(--bg-color); border-radius: var(--radius-md); font-size: 14px; line-height: 1.6;">
+                {{ teacher.bio|truncatewords:50 }}
+            </div>
+        </div>
+
+        <!-- Calendar -->
+        <div class="calendar-section">
+            <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 10px;">
+                <i class="fas fa-calendar-alt" style="color: var(--primary-color);"></i>
+                Available Time Slots
+            </h2>
+            <p style="color: var(--text-secondary); margin-bottom: 25px;">
+                Click on a green slot to book. All times are in your local timezone.
+            </p>
+
+            <div id="calendar"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Booking Modal -->
+<div id="booking-modal" class="booking-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Confirm Booking</h3>
+            <button class="close-modal" onclick="closeBookingModal()">&times;</button>
+        </div>
+
+        <div class="session-details">
+            <div class="detail-item">
+                <div class="detail-icon">
+                    <i class="fas fa-calendar"></i>
+                </div>
+                <div class="detail-text">
+                    <div class="detail-label">Date</div>
+                    <div class="detail-value" id="modal-date">-</div>
+                </div>
+            </div>
+
+            <div class="detail-item">
+                <div class="detail-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="detail-text">
+                    <div class="detail-label">Time</div>
+                    <div class="detail-value" id="modal-time">-</div>
+                </div>
+            </div>
+
+            <div class="detail-item">
+                <div class="detail-icon">
+                    <i class="fas fa-hourglass-half"></i>
+                </div>
+                <div class="detail-text">
+                    <div class="detail-label">Duration</div>
+                    <div class="detail-value" id="modal-duration">60 minutes</div>
+                </div>
+            </div>
+
+            <div class="detail-item">
+                <div class="detail-icon">
+                    <i class="fas fa-money-bill-wave"></i>
+                </div>
+                <div class="detail-text">
+                    <div class="detail-label">Price</div>
+                    <div class="detail-value">{{ teacher.hourly_rate }} SAR</div>
+                </div>
+            </div>
+        </div>
+
+        <form id="booking-form">
+            {% csrf_token %}
+            <input type="hidden" id="selected-start" name="start_time">
+            <input type="hidden" id="selected-end" name="end_time">
+
+            <div class="form-group">
+                <label for="notes">Notes (Optional)</label>
+                <textarea id="notes" name="notes" class="form-control" rows="3" 
+                          placeholder="Any special requirements or topics you'd like to cover?"></textarea>
+            </div>
+
+            <button type="submit" class="btn-confirm">
+                <i class="fas fa-check-circle"></i>
+                Confirm Booking
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.5/main.min.js"></script>
+<script>
+let calendar;
+let selectedSlot = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    const calendarEl = document.getElementById('calendar');
+    
+    calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'timeGridWeek',
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'timeGridWeek,timeGridDay'
+        },
+        slotMinTime: '08:00:00',
+        slotMaxTime: '22:00:00',
+        allDaySlot: false,
+        height: 'auto',
+        expandRows: true,
+        nowIndicator: true,
+        selectable: false,
+        eventClick: function(info) {
+            if (info.event.classNames.includes('available-slot')) {
+                openBookingModal(info.event);
+            }
+        },
+        events: function(info, successCallback, failureCallback) {
+            // Fetch available slots from backend
+            fetch(`/bookings/api/available-slots/?teacher_id={{ teacher.user.id }}&start=${info.startStr}&end=${info.endStr}`)
+                .then(response => response.json())
+                .then(data => {
+                    const events = data.slots.map(slot => ({
+                        title: 'Available',
+                        start: slot.start,
+                        end: slot.end,
+                        className: slot.available ? 'available-slot' : 'booked-slot',
+                        editable: false
+                    }));
+                    successCallback(events);
+                })
+                .catch(error => {
+                    console.error('Error fetching slots:', error);
+                    failureCallback(error);
+                });
+        }
+    });
+    
+    calendar.render();
+});
+
+function openBookingModal(event) {
+    selectedSlot = event;
+    
+    const startDate = new Date(event.start);
+    const endDate = new Date(event.end);
+    
+    document.getElementById('modal-date').textContent = 
+        startDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    
+    document.getElementById('modal-time').textContent = 
+        startDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) + 
+        ' - ' + 
+        endDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    
+    document.getElementById('selected-start').value = event.startStr;
+    document.getElementById('selected-end').value = event.endStr;
+    
+    document.getElementById('booking-modal').classList.add('show');
+}
+
+function closeBookingModal() {
+    document.getElementById('booking-modal').classList.remove('show');
+    selectedSlot = null;
+}
+
+// Form Submission
+document.getElementById('booking-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const submitBtn = this.querySelector('.btn-confirm');
+    
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+    
+    try {
+        const response = await fetch('{% url "bookings:create_booking" teacher.user.id %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            window.location.href = data.redirect_url;
+        } else {
+            alert(data.error || 'Booking failed. Please try again.');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-check-circle"></i> Confirm Booking';
+        }
+    } catch (error) {
+        console.error('Booking error:', error);
+        alert('An error occurred. Please try again.');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-check-circle"></i> Confirm Booking';
+    }
+});
+
+// Close modal on outside click
+document.getElementById('booking-modal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeBookingModal();
+    }
+});
+</script>
+{% endblock %}

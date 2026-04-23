@@ -1,0 +1,66 @@
+{% extends 'layouts/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}تفاصيل الدفع - EduVerse{% endblock %}
+
+{% block extra_head %}
+<style>
+.payment-detail-shell { border:1px solid rgba(148,163,184,.14); border-radius:28px; overflow:hidden; background:linear-gradient(180deg, rgba(15,23,42,.96), rgba(17,24,39,.98)); box-shadow:0 24px 48px rgba(2,6,23,.24); }
+.payment-detail-head { padding:26px 28px; background:linear-gradient(135deg, rgba(56,189,248,.18), rgba(139,92,246,.18)); border-bottom:1px solid rgba(255,255,255,.06); display:flex; justify-content:space-between; gap:16px; align-items:flex-start; }
+.payment-detail-head h3 { margin:0 0 8px; font-size:1.45rem; }
+.payment-detail-head p { margin:0; color:#cbd5e1; }
+.payment-status { display:inline-flex; align-items:center; gap:8px; padding:10px 14px; border-radius:999px; font-weight:900; }
+.status-completed { background:rgba(34,197,94,.16); color:#bbf7d0; border:1px solid rgba(34,197,94,.2); }
+.status-processing { background:rgba(56,189,248,.16); color:#d7f2ff; border:1px solid rgba(56,189,248,.2); }
+.status-pending { background:rgba(245,158,11,.16); color:#fde68a; border:1px solid rgba(245,158,11,.2); }
+.status-failed, .status-cancelled { background:rgba(244,63,94,.16); color:#fecdd3; border:1px solid rgba(244,63,94,.22); }
+.status-refunded { background:rgba(168,85,247,.16); color:#e9d5ff; border:1px solid rgba(168,85,247,.22); }
+.payment-detail-grid { padding:26px 28px 28px; display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:16px; }
+.detail-card { padding:18px; border-radius:20px; background:rgba(15,23,42,.58); border:1px solid rgba(148,163,184,.1); }
+.detail-card strong { display:block; margin-bottom:8px; color:#fff; }
+.detail-card span { color:#dbe7f5; line-height:1.8; }
+.detail-card.failure { border-color:rgba(244,63,94,.22); background:rgba(127,29,29,.14); }
+.detail-card.refund { border-color:rgba(168,85,247,.22); background:rgba(76,29,149,.14); }
+@media (max-width: 760px) { .payment-detail-head, .payment-detail-grid { grid-template-columns:1fr; display:grid; } }
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<section class="dashboard-section">
+    <div class="section-header">
+        <div class="section-title"><i class="fas fa-file-invoice-dollar"></i> تفاصيل الدفع</div>
+        <a href="{% url 'payments:payment_list' %}" class="btn-dash btn-outline-dash">
+            <i class="fas fa-arrow-right"></i> العودة
+        </a>
+    </div>
+
+    <div class="payment-detail-shell">
+        <div class="payment-detail-head">
+            <div>
+                <h3>{{ payment.amount }} {{ payment.currency }}</h3>
+                <p>عملية دفع مرتبطة بـ {% if payment.enrollment %}اشتراك كورس{% elif payment.booking %}جلسة محجوزة{% else %}عملية مستقلة{% endif %} وتم توضيح كل بياناتها ضمن بطاقات منفصلة.</p>
+            </div>
+            <div class="payment-status status-{{ payment.status }}">{{ payment.get_status_display }}</div>
+        </div>
+
+        <div class="payment-detail-grid">
+            <div class="detail-card"><strong>طريقة الدفع</strong><span>{{ payment.get_payment_method_display }}</span></div>
+            <div class="detail-card"><strong>بوابة الدفع</strong><span>{{ payment.payment_gateway|default:"محلية/تجريبية" }}</span></div>
+            <div class="detail-card"><strong>معرف المعاملة</strong><span>{{ payment.transaction_id|default:"غير متوفر" }}</span></div>
+            <div class="detail-card"><strong>التاريخ</strong><span>{{ payment.created_at|date:"Y-m-d H:i" }}</span></div>
+            {% if payment.booking %}
+            <div class="detail-card"><strong>الحجز المرتبط</strong><span>{{ payment.booking }}</span></div>
+            {% endif %}
+            {% if payment.enrollment %}
+            <div class="detail-card"><strong>التسجيل المرتبط</strong><span>{{ payment.enrollment }}</span></div>
+            {% endif %}
+            {% if payment.failure_reason %}
+            <div class="detail-card failure"><strong>سبب الفشل</strong><span>{{ payment.failure_reason }}</span></div>
+            {% endif %}
+            {% if payment.refunded_amount %}
+            <div class="detail-card refund"><strong>المبلغ المسترد</strong><span>{{ payment.refunded_amount }} {{ payment.currency }}{% if payment.refund_date %}<br>{{ payment.refund_date|date:"Y-m-d H:i" }}{% endif %}</span></div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

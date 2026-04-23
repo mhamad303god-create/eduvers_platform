@@ -1,0 +1,170 @@
+{% extends 'layouts/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}الملف الشخصي - EduVerse{% endblock %}
+
+{% block dashboard_content %}
+<section class="profile-shell">
+    <div class="profile-head">
+        <h2><i class="fas fa-user-cog"></i> الملف الشخصي</h2>
+        <p>تحديث بيانات الحساب وصورة الملف الشخصي</p>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="profile-grid">
+        {% csrf_token %}
+
+        <aside class="profile-side">
+            <div class="avatar-wrap">
+                <div class="avatar-ring"></div>
+                <div class="avatar-frame">
+                    {% if user.avatar %}
+                        <img src="{{ user.avatar.url }}" id="avatar-preview" alt="Profile avatar">
+                    {% else %}
+                        <img src="" id="avatar-preview" alt="Profile avatar" style="display:none;">
+                        <div id="avatar-placeholder" class="avatar-placeholder">
+                            <i class="fas fa-user"></i>
+                        </div>
+                    {% endif %}
+                </div>
+                <label for="{{ user_form.avatar.id_for_label }}" class="avatar-camera">
+                    <i class="fas fa-camera"></i>
+                </label>
+                {{ user_form.avatar.as_widget|safe }}
+            </div>
+
+            <h3>{{ user.get_full_name|default:user.email }}</h3>
+            <p>{{ user.email }}</p>
+
+            <div class="account-meta">
+                <div><span>تاريخ الانضمام</span><strong>{{ user.date_joined|date:"d M Y" }}</strong></div>
+                <div>
+                    <span>نوع الحساب</span>
+                    <strong>
+                        {% if 'teacher' in user_roles %}معلم{% elif 'student' in user_roles %}طالب{% else %}مستخدم{% endif %}
+                    </strong>
+                </div>
+            </div>
+        </aside>
+
+        <main class="profile-main">
+            <div class="block-title"><i class="fas fa-id-card"></i> المعلومات الشخصية</div>
+            <div class="field-grid">
+                <div class="field">
+                    <label for="{{ user_form.first_name.id_for_label }}">الاسم الأول</label>
+                    {{ user_form.first_name }}
+                    {% if user_form.first_name.errors %}<small class="err">{{ user_form.first_name.errors.0 }}</small>{% endif %}
+                </div>
+                <div class="field">
+                    <label for="{{ user_form.last_name.id_for_label }}">اسم العائلة</label>
+                    {{ user_form.last_name }}
+                    {% if user_form.last_name.errors %}<small class="err">{{ user_form.last_name.errors.0 }}</small>{% endif %}
+                </div>
+                <div class="field field-full">
+                    <label for="{{ user_form.phone.id_for_label }}">رقم الهاتف</label>
+                    {{ user_form.phone }}
+                    {% if user_form.phone.errors %}<small class="err">{{ user_form.phone.errors.0 }}</small>{% endif %}
+                </div>
+            </div>
+
+            {% if profile_form %}
+                <div class="block-title second"><i class="fas fa-layer-group"></i> بيانات إضافية</div>
+                <div class="field-grid">
+                    {% for field in profile_form %}
+                        <div class="field {% if field.name == 'bio' %}field-full{% endif %}">
+                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.help_text %}<small class="hint">{{ field.help_text }}</small>{% endif %}
+                            {% if field.errors %}<small class="err">{{ field.errors.0 }}</small>{% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="submit-row">
+                <button type="submit" class="btn-save">
+                    <i class="fas fa-save"></i> حفظ التغييرات
+                </button>
+            </div>
+        </main>
+    </form>
+</section>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+.profile-shell { max-width: 1120px; margin: 0 auto; }
+.profile-head h2 { margin: 0; font-size: 1.8rem; display: flex; gap: 10px; align-items: center; }
+.profile-head p { margin: 8px 0 20px; color: var(--dash-text-muted); }
+.profile-grid { display: grid; grid-template-columns: 310px 1fr; gap: 20px; }
+.profile-side, .profile-main { border: 1px solid var(--dash-border); border-radius: 16px; background: linear-gradient(170deg, rgba(19, 35, 61, 0.96), rgba(9, 20, 36, 0.96)); box-shadow: var(--dash-shadow); }
+.profile-side { padding: 22px; text-align: center; }
+.avatar-wrap { position: relative; width: 180px; height: 180px; margin: 0 auto 16px; }
+.avatar-ring { position: absolute; inset: -8px; border-radius: 50%; background: conic-gradient(from 0deg, #0ea5e9, #22d3ee, #38bdf8, #0ea5e9); filter: blur(0.5px); animation: spinRing 7s linear infinite; }
+.avatar-frame { position: absolute; inset: 0; border-radius: 50%; overflow: hidden; border: 3px solid #0ea5e9; background: #0b1324; z-index: 2; }
+.avatar-frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.avatar-placeholder { width: 100%; height: 100%; display: grid; place-items: center; color: rgba(255,255,255,0.24); font-size: 4rem; }
+.avatar-camera { position: absolute; bottom: 10px; right: 10px; z-index: 3; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; color: #fff; background: #f59e0b; box-shadow: 0 8px 18px rgba(245, 158, 11, 0.45); cursor: pointer; transition: transform .2s ease; }
+.avatar-camera:hover { transform: scale(1.08); }
+input[type=file][name=avatar] { display: none; }
+.profile-side h3 { margin: 8px 0 6px; font-size: 1.35rem; color: #fff; }
+.profile-side p { margin: 0 0 14px; color: var(--dash-text-muted); }
+.account-meta { border: 1px solid var(--dash-border); background: rgba(10, 20, 36, 0.72); border-radius: 12px; padding: 12px; text-align: right; display: grid; gap: 9px; }
+.account-meta div { display: flex; justify-content: space-between; color: var(--dash-text-muted); }
+.account-meta strong { color: #dbeafe; }
+.profile-main { padding: 20px; }
+.block-title { font-size: 1.15rem; color: #f8fafc; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+.block-title i { color: #38bdf8; }
+.block-title.second { margin-top: 16px; }
+.field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.field { display: flex; flex-direction: column; gap: 7px; }
+.field-full { grid-column: 1 / -1; }
+.field label { color: var(--dash-text-muted); font-size: 0.9rem; }
+.field input, .field textarea, .field select {
+    background: #0a1324;
+    color: #fff;
+    border: 1px solid rgba(71, 85, 105, 0.72);
+    border-radius: 10px;
+    padding: 11px 12px;
+    transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+.field textarea { min-height: 120px; resize: vertical; }
+.field input:focus, .field textarea:focus, .field select:focus {
+    border-color: #38bdf8;
+    box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.14);
+    outline: none;
+    transform: translateY(-1px);
+}
+.hint { color: #94a3b8; font-size: 0.8rem; }
+.err { color: #f87171; font-size: 0.8rem; }
+.submit-row { margin-top: 18px; display: flex; justify-content: flex-end; }
+.btn-save { border: none; border-radius: 10px; padding: 11px 16px; color: #fff; font-weight: 700; background: linear-gradient(120deg, #0ea5e9, #06b6d4); box-shadow: 0 12px 22px rgba(14, 165, 233, 0.28); }
+.btn-save:hover { transform: translateY(-1px); }
+@keyframes spinRing { to { transform: rotate(360deg); } }
+@media (max-width: 980px) { .profile-grid { grid-template-columns: 1fr; } }
+@media (max-width: 640px) { .field-grid { grid-template-columns: 1fr; } .submit-row { justify-content: stretch; } .btn-save { width: 100%; } }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const avatarInput = document.getElementById('{{ user_form.avatar.id_for_label }}');
+    const avatarPreview = document.getElementById('avatar-preview');
+    const avatarPlaceholder = document.getElementById('avatar-placeholder');
+
+    if (avatarInput) {
+        avatarInput.addEventListener('change', function(e) {
+            const file = e.target.files && e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                avatarPreview.src = ev.target.result;
+                avatarPreview.style.display = 'block';
+                if (avatarPlaceholder) avatarPlaceholder.style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+});
+</script>
+{% endblock %}

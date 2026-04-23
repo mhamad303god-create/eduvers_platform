@@ -1,0 +1,805 @@
+{% extends 'layouts/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}الفصل المباشر - EduVerse{% endblock %}
+
+{% block extra_head %}
+<style>
+.classroom-shell { display:grid; grid-template-columns: 320px 1fr; gap:24px; }
+.classroom-sidebar, .classroom-stage { border-radius:26px; border:1px solid rgba(96,165,250,.18); background:linear-gradient(180deg, rgba(15,23,42,.94), rgba(15,23,42,.84)); box-shadow:0 28px 58px rgba(2,6,23,.34); }
+.classroom-sidebar { padding:22px; display:grid; gap:16px; align-content:start; }
+.classroom-stage { padding:18px; min-height:76vh; }
+.classroom-chip { display:inline-flex; align-items:center; gap:8px; padding:10px 14px; border-radius:999px; color:#dbeafe; background:rgba(14,165,233,.12); border:1px solid rgba(14,165,233,.2); font-weight:800; }
+.classroom-sidebar h3 { margin:0; color:#fff; font-size:1.5rem; }
+.session-card { padding:16px 18px; border-radius:18px; background:rgba(15,23,42,.56); border:1px solid rgba(96,165,250,.14); color:#dbeafe; line-height:1.9; }
+.session-card strong { color:#fff; }
+.diagnostic-list { display:grid; gap:10px; }
+.diagnostic-row { padding:12px 14px; border-radius:16px; background:rgba(15,23,42,.46); border:1px solid rgba(96,165,250,.12); color:#dbeafe; }
+.diagnostic-row strong { display:block; margin-bottom:6px; color:#fff; }
+.classroom-controls { display:flex; gap:10px; flex-wrap:wrap; }
+.classroom-btn { border:none; border-radius:16px; padding:12px 14px; min-width:120px; font-weight:800; color:#e2e8f0; background:rgba(15,23,42,.88); border:1px solid rgba(96,165,250,.18); cursor:pointer; display:inline-flex; justify-content:center; align-items:center; gap:8px; }
+.classroom-btn.active { background:linear-gradient(135deg, rgba(14,165,233,.22), rgba(59,130,246,.24)); color:#fff; }
+.classroom-btn.warn { background:linear-gradient(135deg, rgba(245,158,11,.18), rgba(251,191,36,.12)); color:#fef3c7; }
+.classroom-btn.danger { background:linear-gradient(135deg, rgba(239,68,68,.20), rgba(220,38,38,.18)); color:#fff; }
+.classroom-grid { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:14px; min-height:64vh; }
+.classroom-grid.has-stage { grid-template-columns: minmax(0, 1.85fr) minmax(220px, .72fr); }
+.classroom-grid.has-stage .video-tile.is-stage { grid-column:1; min-height:64vh; }
+.classroom-grid.has-stage .video-tile.is-filmstrip { min-height:220px; }
+.video-tile { position:relative; overflow:hidden; min-height:320px; border-radius:24px; border:1px solid rgba(96,165,250,.14); cursor:pointer; transition:transform .18s ease, border-color .18s ease, box-shadow .18s ease; background:
+linear-gradient(180deg, rgba(2,6,23,.14), rgba(2,6,23,.46)),
+radial-gradient(circle at 20% 20%, rgba(59,130,246,.24), transparent 34%),
+radial-gradient(circle at 80% 80%, rgba(14,165,233,.18), transparent 28%), #030712; }
+.video-tile:hover { transform:translateY(-2px); border-color:rgba(125,211,252,.28); }
+.video-tile.is-stage { border-color:rgba(125,211,252,.38); box-shadow:0 24px 44px rgba(2,6,23,.3); }
+.video-tile.is-pinned { border-color:rgba(250,204,21,.34); }
+.video-el { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:1; background:#020617; }
+.video-empty { position:absolute; inset:0; z-index:1; display:grid; place-items:center; color:#bfdbfe; font-weight:800; text-align:center; padding:20px; }
+.tile-overlay { position:absolute; inset:0; z-index:2; pointer-events:none; background:linear-gradient(180deg, rgba(2,6,23,.04), rgba(2,6,23,.06) 50%, rgba(2,6,23,.62)); }
+.tile-pin { position:absolute; top:12px; right:12px; z-index:3; width:38px; height:38px; border:none; border-radius:999px; background:rgba(2,6,23,.78); color:#e2e8f0; border:1px solid rgba(148,163,184,.18); display:grid; place-items:center; cursor:pointer; }
+.tile-pin.active { background:rgba(250,204,21,.18); color:#fde68a; border-color:rgba(250,204,21,.28); }
+.tile-meta { position:absolute; right:12px; left:12px; bottom:12px; z-index:3; display:flex; justify-content:space-between; gap:10px; align-items:flex-end; }
+.tile-name { display:grid; gap:5px; color:#fff; font-weight:900; }
+.tile-name span { color:#cbd5e1; font-size:.82rem; font-weight:700; }
+.tile-badges { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+.tile-badge { border-radius:999px; padding:6px 10px; background:rgba(2,6,23,.82); color:#e2e8f0; border:1px solid rgba(148,163,184,.18); font-size:.76rem; font-weight:800; }
+.tile-badge.live { background:rgba(16,185,129,.2); color:#dcfce7; border-color:rgba(16,185,129,.22); }
+.tile-badge.warn { background:rgba(239,68,68,.18); color:#fecaca; border-color:rgba(248,113,113,.2); }
+.tile-badge.share { background:rgba(245,158,11,.18); color:#fde68a; border-color:rgba(245,158,11,.22); }
+.status-ribbon { position:absolute; top:12px; left:12px; z-index:3; display:inline-flex; align-items:center; gap:8px; border-radius:999px; padding:7px 11px; background:rgba(2,6,23,.82); color:#fff; border:1px solid rgba(96,165,250,.18); font-size:.8rem; font-weight:800; }
+.classroom-note { margin-top:14px; color:#93c5fd; }
+.security-hint { margin-bottom:16px; padding:16px 18px; border-radius:18px; background:rgba(245,158,11,.12); border:1px solid rgba(245,158,11,.24); color:#fde68a; line-height:1.9; }
+.security-hint a { color:#fff; font-weight:800; text-decoration:underline; word-break:break-all; }
+@media (max-width: 1024px) { .classroom-shell { grid-template-columns:1fr; } .classroom-grid { grid-template-columns:1fr; } }
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<section class="dashboard-section">
+    <div class="section-header">
+        <div class="section-title"><i class="fas fa-video"></i> الفصل المباشر</div>
+        <a href="{{ back_url }}" class="btn-dash btn-outline-dash">
+            <i class="fas fa-arrow-right"></i> العودة إلى الحجز
+        </a>
+    </div>
+    {{ webrtc_ice_servers|json_script:"webrtc-ice-servers" }}
+
+    {% if localhost_room_hint_url %}
+    <div class="security-hint">
+        يبدو أن هذا الفصل فُتح عبر رابط غير آمن للأجهزة. على نفس الجهاز استخدم هذا الرابط لتفعيل الكاميرا والمايك مباشرة:
+        <a href="{{ localhost_room_hint_url }}">{{ localhost_room_hint_url }}</a>
+    </div>
+    {% endif %}
+
+    <div class="classroom-shell">
+        <aside class="classroom-sidebar">
+            <div class="classroom-chip"><i class="fas fa-house-signal"></i> فصل محلي داخل المنصة</div>
+            <h3>{{ role_label }}</h3>
+            <div class="session-card">
+                <div><strong>المعلم:</strong> {{ booking.teacher.user.get_full_name|default:booking.teacher.user.email }}</div>
+                <div><strong>الطالب:</strong> {{ booking.student.user.get_full_name|default:booking.student.user.email }}</div>
+                <div><strong>الوقت:</strong> {{ booking.scheduled_start|date:"Y-m-d H:i" }}</div>
+                <div><strong>المدة:</strong> {{ booking.duration_minutes }} دقيقة</div>
+                <div><strong>الغرفة:</strong> {{ call_room_name }}</div>
+            </div>
+            <div class="session-card" id="classroomState">يتم تجهيز الكاميرا والمايك وربط الطرف الآخر الآن.</div>
+            <div class="session-card">
+                <div><strong>جودة الشبكة:</strong> <span id="networkQualityLabel">جارٍ القياس...</span></div>
+                <div><strong>معدل البث:</strong> <span id="bitrateLabel">-- kbps</span></div>
+                <div><strong>حالة الربط:</strong> <span id="reconnectingLabel">مستقر</span></div>
+                <div><strong>تقسيم الشاشة:</strong> <span id="classroomLayoutLabel">الطرف الآخر يظهر على الشاشة الكبيرة تلقائياً.</span></div>
+            </div>
+            <div class="diagnostic-list">
+                <div class="diagnostic-row"><strong>أمان الصفحة</strong><span id="secureContextStatus">جارٍ الفحص...</span></div>
+                <div class="diagnostic-row"><strong>صلاحية الكاميرا والمايك</strong><span id="permissionStatus">جارٍ الفحص...</span></div>
+                <div class="diagnostic-row"><strong>الأجهزة المكتشفة</strong><span id="deviceInventoryStatus">جارٍ الفحص...</span></div>
+            </div>
+        </aside>
+
+        <section class="classroom-stage">
+            <div class="classroom-controls">
+                <button type="button" class="classroom-btn active" id="toggleAudioBtn"><i class="fas fa-microphone"></i> المايك</button>
+                <button type="button" class="classroom-btn active" id="toggleVideoBtn"><i class="fas fa-video"></i> الكاميرا</button>
+                <button type="button" class="classroom-btn warn" id="shareScreenBtn"><i class="fas fa-desktop"></i> مشاركة الشاشة</button>
+                <button type="button" class="classroom-btn" id="retryMediaBtn"><i class="fas fa-rotate"></i> إعادة التهيئة</button>
+                <button type="button" class="classroom-btn danger" id="leaveRoomBtn"><i class="fas fa-door-open"></i> الخروج</button>
+            </div>
+
+            <div class="classroom-grid" id="classroomGrid">
+                <article class="video-tile" id="localTile" data-tile-user="local">
+                    <button type="button" class="tile-pin" data-pin-toggle title="تثبيت هذا البث على الشاشة الكبيرة">
+                        <i class="fas fa-thumbtack"></i>
+                    </button>
+                    <video id="localVideo" class="video-el" autoplay playsinline muted></video>
+                    <div id="localVideoFallback" class="video-empty">يتم تهيئة البث المحلي...</div>
+                    <div class="tile-overlay"></div>
+                    <div class="status-ribbon" id="transportState"><i class="fas fa-wave-square"></i> ربط محلي</div>
+                    <div class="tile-meta">
+                        <div class="tile-name">
+                            <strong>أنت</strong>
+                            <span>{{ role_label }}</span>
+                        </div>
+                        <div class="tile-badges">
+                            <span class="tile-badge live" id="localAudioBadge">صوت شغال</span>
+                            <span class="tile-badge live" id="localVideoBadge">صورة شغالة</span>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="video-tile" id="remoteTile" data-tile-user="remote">
+                    <button type="button" class="tile-pin" data-pin-toggle title="تثبيت هذا البث على الشاشة الكبيرة">
+                        <i class="fas fa-thumbtack"></i>
+                    </button>
+                    <video id="remoteVideo" class="video-el" autoplay playsinline></video>
+                    <div id="remoteVideoFallback" class="video-empty">بانتظار دخول {{ peer_role }}: {{ peer_name }}</div>
+                    <div class="tile-overlay"></div>
+                    <div class="status-ribbon"><i class="fas fa-user-clock"></i> الطرف الآخر</div>
+                    <div class="tile-meta">
+                        <div class="tile-name">
+                            <strong>{{ peer_name }}</strong>
+                            <span>{{ peer_role }}</span>
+                        </div>
+                        <div class="tile-badges">
+                            <span class="tile-badge warn" id="remoteAudioBadge">بانتظار الصوت</span>
+                            <span class="tile-badge warn" id="remoteVideoBadge">بانتظار الصورة</span>
+                        </div>
+                    </div>
+                </article>
+            </div>
+            <div class="classroom-note">هذا الفصل يستخدم نفس البنية المحلية للاتصال المباشر داخل المشروع.</div>
+        </section>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const currentUserId = Number('{{ current_user_id }}');
+    const wsPath = '{{ call_ws_url }}';
+    const backUrl = '{{ back_url }}';
+    const classroomState = document.getElementById('classroomState');
+    const transportState = document.getElementById('transportState');
+    const localVideo = document.getElementById('localVideo');
+    const remoteVideo = document.getElementById('remoteVideo');
+    const localVideoFallback = document.getElementById('localVideoFallback');
+    const remoteVideoFallback = document.getElementById('remoteVideoFallback');
+    const localAudioBadge = document.getElementById('localAudioBadge');
+    const localVideoBadge = document.getElementById('localVideoBadge');
+    const remoteAudioBadge = document.getElementById('remoteAudioBadge');
+    const remoteVideoBadge = document.getElementById('remoteVideoBadge');
+    const secureContextStatus = document.getElementById('secureContextStatus');
+    const permissionStatus = document.getElementById('permissionStatus');
+    const deviceInventoryStatus = document.getElementById('deviceInventoryStatus');
+    const networkQualityLabel = document.getElementById('networkQualityLabel');
+    const bitrateLabel = document.getElementById('bitrateLabel');
+    const reconnectingLabel = document.getElementById('reconnectingLabel');
+    const classroomGrid = document.getElementById('classroomGrid');
+    const localTile = document.getElementById('localTile');
+    const remoteTile = document.getElementById('remoteTile');
+    const classroomLayoutLabel = document.getElementById('classroomLayoutLabel');
+
+    const toggleAudioBtn = document.getElementById('toggleAudioBtn');
+    const toggleVideoBtn = document.getElementById('toggleVideoBtn');
+    const shareScreenBtn = document.getElementById('shareScreenBtn');
+    const retryMediaBtn = document.getElementById('retryMediaBtn');
+    const leaveRoomBtn = document.getElementById('leaveRoomBtn');
+
+    let localStream = null;
+    let cameraStream = null;
+    let screenStream = null;
+    let roomSocket = null;
+    let peerState = null;
+    let remotePeerId = null;
+    let localState = { audioEnabled: true, videoEnabled: true, screenSharing: false };
+    const isLocalHost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+    let pendingIceCandidates = [];
+    let statsSnapshot = null;
+    let activeVideoProfile = 'high';
+    let pinnedStage = null;
+    let remoteIsConnected = false;
+    let statsTimer = null;
+    let socketReconnectTimer = null;
+    let socketReconnectAttempts = 0;
+
+    function updateClassroomLayout() {
+        const stageTarget = pinnedStage || (localState.screenSharing ? 'local' : (remoteIsConnected ? 'remote' : 'local'));
+        classroomGrid.classList.toggle('has-stage', true);
+        [localTile, remoteTile].forEach(function(tile) {
+            const tileKey = tile.dataset.tileUser;
+            const isStage = tileKey === stageTarget;
+            const isPinned = pinnedStage === tileKey;
+            tile.classList.toggle('is-stage', isStage);
+            tile.classList.toggle('is-filmstrip', !isStage);
+            tile.classList.toggle('is-pinned', isPinned);
+            const pinBtn = tile.querySelector('[data-pin-toggle]');
+            if (pinBtn) {
+                pinBtn.classList.toggle('active', isPinned);
+                pinBtn.setAttribute('aria-pressed', isPinned ? 'true' : 'false');
+            }
+        });
+        if (pinnedStage === 'remote') {
+            classroomLayoutLabel.textContent = 'تم تثبيت الطرف الآخر على الشاشة الكبيرة.';
+        } else if (pinnedStage === 'local') {
+            classroomLayoutLabel.textContent = 'تم تثبيت بثك المحلي على الشاشة الكبيرة.';
+        } else if (localState.screenSharing) {
+            classroomLayoutLabel.textContent = 'تم إبراز مشاركة شاشتك على المسرح الرئيسي.';
+        } else if (remoteIsConnected) {
+            classroomLayoutLabel.textContent = 'الطرف الآخر يظهر على الشاشة الكبيرة تلقائياً أثناء الفصل.';
+        } else {
+            classroomLayoutLabel.textContent = 'بانتظار دخول الطرف الآخر، ويظهر حينها على الشاشة الكبيرة تلقائياً.';
+        }
+    }
+
+    function bindTilePinning(tile) {
+        const tileKey = tile.dataset.tileUser;
+        const pinBtn = tile.querySelector('[data-pin-toggle]');
+        const togglePin = function() {
+            pinnedStage = pinnedStage === tileKey ? null : tileKey;
+            updateClassroomLayout();
+        };
+        tile.addEventListener('click', togglePin);
+        if (pinBtn) {
+            pinBtn.addEventListener('click', function(event) {
+                event.stopPropagation();
+                togglePin();
+            });
+        }
+    }
+
+    function stopStream(stream) {
+        if (!stream) return;
+        stream.getTracks().forEach(function(track) {
+            track.stop();
+        });
+    }
+
+    function buildMediaErrorMessage(error) {
+        const name = error && error.name ? error.name : '';
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            return 'هذا المتصفح لا يدعم تشغيل الكاميرا والمايك عبر MediaDevices.';
+        }
+        if (!window.isSecureContext && !isLocalHost) {
+            return 'تشغيل الكاميرا والمايك يتطلب رابطاً آمناً HTTPS. افتح المنصة عبر https أو localhost ثم أعد المحاولة.';
+        }
+        if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+            return 'تم رفض صلاحية الكاميرا أو المايك من المتصفح. اسمح لهما من شريط العنوان ثم أعد المحاولة.';
+        }
+        if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
+            return 'لم يتم العثور على كاميرا أو مايك على هذا الجهاز.';
+        }
+        if (name === 'NotReadableError' || name === 'TrackStartError') {
+            return 'الكاميرا أو المايك مستخدمان في برنامج آخر. أغلق البرنامج الآخر ثم أعد المحاولة.';
+        }
+        return 'تعذر تشغيل الكاميرا أو المايك حالياً. راجع الصلاحيات والأجهزة ثم أعد المحاولة.';
+    }
+
+    async function refreshDeviceDiagnostics() {
+        secureContextStatus.textContent = window.isSecureContext || isLocalHost
+            ? 'السياق آمن ويمكن للمتصفح السماح بالأجهزة.'
+            : 'السياق غير آمن. يجب تشغيل المنصة عبر HTTPS أو localhost.';
+
+        if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+            permissionStatus.textContent = 'المتصفح لا يدعم فحص الصلاحيات أو الأجهزة.';
+            deviceInventoryStatus.textContent = 'تعذر قراءة قائمة الأجهزة.';
+            return;
+        }
+
+        try {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const audioInputs = devices.filter(function(device) { return device.kind === 'audioinput'; }).length;
+            const videoInputs = devices.filter(function(device) { return device.kind === 'videoinput'; }).length;
+            deviceInventoryStatus.textContent = `كاميرات: ${videoInputs} | مايكات: ${audioInputs}`;
+        } catch (error) {
+            deviceInventoryStatus.textContent = 'تعذر قراءة الأجهزة من المتصفح.';
+        }
+
+        if (navigator.permissions && navigator.permissions.query) {
+            try {
+                const cameraPermission = await navigator.permissions.query({ name: 'camera' });
+                const microphonePermission = await navigator.permissions.query({ name: 'microphone' });
+                permissionStatus.textContent = `الكاميرا: ${cameraPermission.state} | المايك: ${microphonePermission.state}`;
+            } catch (error) {
+                permissionStatus.textContent = 'فحص الصلاحيات غير مدعوم بالكامل في هذا المتصفح.';
+            }
+        } else {
+            permissionStatus.textContent = 'فحص الصلاحيات غير مدعوم، وسيتم طلبها مباشرة عند التهيئة.';
+        }
+    }
+
+    async function requestUserMedia(constraints) {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            throw new Error('MediaDevicesUnavailable');
+        }
+        return navigator.mediaDevices.getUserMedia(constraints);
+    }
+
+    async function acquireBestEffortStream() {
+        const attempts = [
+            {
+                constraints: {
+                    audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+                    video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
+                },
+            },
+            { constraints: { audio: true, video: true } },
+            { constraints: { audio: true, video: false } },
+            { constraints: { audio: false, video: true } },
+        ];
+
+        let lastError = null;
+        for (const attempt of attempts) {
+            try {
+                return await requestUserMedia(attempt.constraints);
+            } catch (error) {
+                lastError = error;
+            }
+        }
+        throw lastError || new Error('MediaInitFailed');
+    }
+
+    function updateBadges() {
+        localAudioBadge.textContent = localState.audioEnabled ? 'صوت شغال' : 'صوت مكتوم';
+        localAudioBadge.className = `tile-badge ${localState.audioEnabled ? 'live' : 'warn'}`;
+        localVideoBadge.textContent = localState.videoEnabled ? (localState.screenSharing ? 'مشاركة شاشة' : 'صورة شغالة') : 'صورة متوقفة';
+        localVideoBadge.className = `tile-badge ${localState.videoEnabled ? (localState.screenSharing ? 'share' : 'live') : 'warn'}`;
+        toggleAudioBtn.classList.toggle('active', localState.audioEnabled);
+        toggleVideoBtn.classList.toggle('active', localState.videoEnabled);
+        shareScreenBtn.classList.toggle('active', localState.screenSharing);
+        toggleAudioBtn.innerHTML = localState.audioEnabled ? '<i class="fas fa-microphone"></i> المايك' : '<i class="fas fa-microphone-slash"></i> المايك';
+        toggleVideoBtn.innerHTML = localState.videoEnabled ? '<i class="fas fa-video"></i> الكاميرا' : '<i class="fas fa-video-slash"></i> الكاميرا';
+        shareScreenBtn.innerHTML = localState.screenSharing ? '<i class="fas fa-desktop"></i> إيقاف المشاركة' : '<i class="fas fa-desktop"></i> مشاركة الشاشة';
+        updateClassroomLayout();
+    }
+
+    function setConnectionInsights(metrics) {
+        networkQualityLabel.textContent = metrics.qualityLabel;
+        bitrateLabel.textContent = `${metrics.bitrateKbps} kbps`;
+        reconnectingLabel.textContent = metrics.reconnecting ? 'يعيد الربط' : 'مستقر';
+    }
+
+    async function applyAdaptiveVideoProfile(profile) {
+        if (activeVideoProfile === profile || !peerState || !peerState.pc) return;
+        activeVideoProfile = profile;
+        const target = {
+            high: { maxBitrate: 1800000, scaleResolutionDownBy: 1, maxFramerate: 30 },
+            medium: { maxBitrate: 900000, scaleResolutionDownBy: 1.4, maxFramerate: 24 },
+            low: { maxBitrate: 350000, scaleResolutionDownBy: 2, maxFramerate: 18 },
+        }[profile];
+        const sender = peerState.pc.getSenders().find(function(item) {
+            return item.track && item.track.kind === 'video';
+        });
+        if (!sender || !sender.getParameters) return;
+        const params = sender.getParameters();
+        params.encodings = params.encodings && params.encodings.length ? params.encodings : [{}];
+        params.encodings[0].maxBitrate = target.maxBitrate;
+        params.encodings[0].scaleResolutionDownBy = target.scaleResolutionDownBy;
+        params.encodings[0].maxFramerate = target.maxFramerate;
+        try {
+            await sender.setParameters(params);
+        } catch (error) {
+            console.warn('booking adaptive profile failed', error);
+        }
+    }
+
+    async function refreshConnectionStats() {
+        if (!peerState || !peerState.pc || !peerState.pc.getStats) {
+            setConnectionInsights({ qualityLabel: 'محلي فقط', bitrateKbps: 0, reconnecting: false });
+            return;
+        }
+
+        const report = await peerState.pc.getStats();
+        const now = Date.now();
+        let bitrateKbps = 0;
+        let rttMs = 0;
+        let packetsLost = 0;
+        report.forEach(function(stat) {
+            if (stat.type === 'candidate-pair' && stat.state === 'succeeded' && stat.currentRoundTripTime !== undefined) {
+                rttMs = Math.round(stat.currentRoundTripTime * 1000);
+            }
+            if (stat.type === 'outbound-rtp' && stat.kind === 'video' && !stat.isRemote && stat.bytesSent !== undefined) {
+                if (statsSnapshot && now > statsSnapshot.time) {
+                    bitrateKbps = Math.max(0, Math.round(((stat.bytesSent - statsSnapshot.bytesSent) * 8) / (now - statsSnapshot.time)));
+                }
+                statsSnapshot = { bytesSent: stat.bytesSent, time: now };
+            }
+            if ((stat.type === 'remote-inbound-rtp' || stat.type === 'inbound-rtp') && stat.kind === 'video' && stat.packetsLost !== undefined) {
+                packetsLost = Math.max(packetsLost, stat.packetsLost);
+            }
+        });
+
+        let quality = 'high';
+        let qualityLabel = 'ممتازة';
+        if (['disconnected', 'connecting'].includes(peerState.pc.connectionState) || rttMs > 420 || bitrateKbps < 180) {
+            quality = 'poor';
+            qualityLabel = 'ضعيفة';
+        } else if (rttMs > 260 || bitrateKbps < 450 || packetsLost > 20) {
+            quality = 'fair';
+            qualityLabel = 'متوسطة';
+        } else if (rttMs > 140 || bitrateKbps < 900 || packetsLost > 5) {
+            quality = 'medium';
+            qualityLabel = 'جيدة';
+        }
+
+        const summary = {
+            qualityLabel,
+            bitrateKbps,
+            reconnecting: ['disconnected', 'connecting'].includes(peerState.pc.connectionState) || (roomSocket && roomSocket.readyState !== WebSocket.OPEN),
+        };
+        setConnectionInsights(summary);
+        await applyAdaptiveVideoProfile(quality === 'poor' ? 'low' : quality === 'fair' ? 'medium' : 'high');
+    }
+
+    async function initMedia() {
+        stopStream(cameraStream);
+        cameraStream = await acquireBestEffortStream();
+        localStream = cameraStream;
+        localVideo.srcObject = localStream;
+        localVideoFallback.style.display = 'none';
+        const hasAudio = localStream.getAudioTracks().length > 0;
+        const hasVideo = localStream.getVideoTracks().length > 0;
+        classroomState.textContent = hasAudio && hasVideo
+            ? 'تم تجهيز أجهزتك، بانتظار الطرف الآخر أو بدء تبادل الإشارة.'
+            : hasAudio
+                ? 'تم تجهيز المايك فقط، والكاميرا غير متاحة حالياً.'
+                : hasVideo
+                    ? 'تم تجهيز الكاميرا فقط، والمايك غير متاح حالياً.'
+                    : 'تم فتح الغرفة لكن بدون أجهزة فعالة.';
+        localState.audioEnabled = hasAudio;
+        localState.videoEnabled = hasVideo;
+        localState.screenSharing = false;
+        updateBadges();
+        refreshDeviceDiagnostics();
+    }
+
+    function setTransportLabel(label, ok) {
+        transportState.innerHTML = `<i class="fas fa-wave-square"></i> ${label}`;
+        transportState.style.background = ok ? 'rgba(16,185,129,.18)' : 'rgba(245,158,11,.18)';
+        transportState.style.color = ok ? '#dcfce7' : '#fde68a';
+    }
+
+    async function requestIceRestart(reason) {
+        if (!peerState || !peerState.pc || !roomSocket || roomSocket.readyState !== WebSocket.OPEN || !remotePeerId) return;
+        const now = Date.now();
+        if (peerState.lastIceRestartAt && (now - peerState.lastIceRestartAt) < 6000) return;
+        peerState.lastIceRestartAt = now;
+        try {
+            if (typeof peerState.pc.restartIce === 'function') {
+                peerState.pc.restartIce();
+            }
+            const offer = await peerState.pc.createOffer({ iceRestart: true });
+            await peerState.pc.setLocalDescription(offer);
+            roomSocket.send(JSON.stringify({ action: 'signal', target: remotePeerId, payload: { description: peerState.pc.localDescription } }));
+            classroomState.textContent = `يحاول النظام إعادة الربط بسبب ${reason}.`;
+        } catch (error) {
+            console.warn('booking ice restart failed', error);
+        }
+    }
+
+    function ensurePeerState() {
+        if (peerState) return peerState;
+        const iceServers = JSON.parse(document.getElementById('webrtc-ice-servers').textContent || '[]');
+        peerState = {
+            pc: new RTCPeerConnection({ iceServers: Array.isArray(iceServers) ? iceServers : [] }),
+            makingOffer: false,
+            ignoreOffer: false,
+            isSettingRemoteAnswerPending: false,
+            polite: currentUserId > Number(remotePeerId || 0),
+            lastIceRestartAt: 0,
+        };
+        if (localStream) {
+            localStream.getTracks().forEach(function(track) {
+                peerState.pc.addTrack(track, localStream);
+            });
+        }
+
+        peerState.pc.onicecandidate = function(event) {
+            if (!event.candidate || !roomSocket || roomSocket.readyState !== WebSocket.OPEN || !remotePeerId) return;
+            roomSocket.send(JSON.stringify({ action: 'signal', target: remotePeerId, payload: { candidate: event.candidate } }));
+        };
+
+        peerState.pc.ontrack = function(event) {
+            remoteVideo.srcObject = event.streams[0];
+            remoteVideoFallback.style.display = 'none';
+            remoteAudioBadge.textContent = 'صوت شغال';
+            remoteAudioBadge.className = 'tile-badge live';
+            remoteVideoBadge.textContent = 'صورة شغالة';
+            remoteVideoBadge.className = 'tile-badge live';
+            classroomState.textContent = 'تم ربط الفصل المباشر محلياً بين الطرفين.';
+            remoteIsConnected = true;
+            updateClassroomLayout();
+        };
+
+        peerState.pc.onconnectionstatechange = function() {
+            if (peerState.pc.connectionState === 'disconnected') {
+                classroomState.textContent = 'الاتصال ضعيف حالياً، يحاول النظام إعادة الربط.';
+                requestIceRestart('ضعف الاتصال');
+            }
+            if (peerState.pc.connectionState === 'failed') {
+                classroomState.textContent = 'فشل الربط الحالي، يحاول النظام إنشاء مسار جديد.';
+                requestIceRestart('فشل الربط');
+            }
+            if (peerState.pc.connectionState === 'closed') {
+                remoteVideo.srcObject = null;
+                remoteVideoFallback.style.display = 'grid';
+                reconnectingLabel.textContent = 'منقطع';
+                remoteIsConnected = false;
+                if (pinnedStage === 'remote') {
+                    pinnedStage = null;
+                }
+                updateClassroomLayout();
+            }
+        };
+
+        peerState.pc.onnegotiationneeded = async function() {
+            try {
+                if (!roomSocket || roomSocket.readyState !== WebSocket.OPEN || !remotePeerId) return;
+                peerState.makingOffer = true;
+                const offer = await peerState.pc.createOffer();
+                await peerState.pc.setLocalDescription(offer);
+                roomSocket.send(JSON.stringify({ action: 'signal', target: remotePeerId, payload: { description: peerState.pc.localDescription } }));
+            } catch (error) {
+                console.warn('booking negotiationneeded failed', error);
+            } finally {
+                peerState.makingOffer = false;
+            }
+        };
+
+        return peerState;
+    }
+
+    async function handleSignal(senderId, payload) {
+        remotePeerId = senderId;
+        const state = ensurePeerState();
+        state.polite = currentUserId > Number(remotePeerId || 0);
+        const pc = state.pc;
+
+        if (payload.description) {
+            const readyForOffer = !state.makingOffer && (pc.signalingState === 'stable' || state.isSettingRemoteAnswerPending);
+            const offerCollision = payload.description.type === 'offer' && !readyForOffer;
+            state.ignoreOffer = !state.polite && offerCollision;
+            if (state.ignoreOffer) {
+                return;
+            }
+            state.isSettingRemoteAnswerPending = payload.description.type === 'answer';
+            await pc.setRemoteDescription(new RTCSessionDescription(payload.description));
+            state.isSettingRemoteAnswerPending = false;
+            if (payload.description.type === 'offer') {
+                await pc.setLocalDescription(await pc.createAnswer());
+                roomSocket.send(JSON.stringify({ action: 'signal', target: senderId, payload: { description: pc.localDescription } }));
+            }
+            for (const candidate of pendingIceCandidates) {
+                try {
+                    await pc.addIceCandidate(candidate);
+                } catch (error) {
+                    console.warn('queued booking ice candidate rejected', error);
+                }
+            }
+            pendingIceCandidates = [];
+        } else if (payload.candidate) {
+            if (!pc.remoteDescription) {
+                pendingIceCandidates.push(new RTCIceCandidate(payload.candidate));
+                return;
+            }
+            try {
+                await pc.addIceCandidate(new RTCIceCandidate(payload.candidate));
+            } catch (error) {
+                if (!state.ignoreOffer) {
+                    console.warn('booking ice candidate rejected', error);
+                }
+            }
+        }
+    }
+
+    async function broadcastPresence() {
+        if (!roomSocket || roomSocket.readyState !== WebSocket.OPEN) return;
+        roomSocket.send(JSON.stringify({ action: 'presence_state', payload: localState }));
+    }
+
+    async function replaceOutgoingVideoTrack(newTrack, nextStream) {
+        localStream = nextStream;
+        localVideo.srcObject = localStream;
+        if (peerState && peerState.pc) {
+            const sender = peerState.pc.getSenders().find(function(item) {
+                return item.track && item.track.kind === 'video';
+            });
+            if (sender) {
+                await sender.replaceTrack(newTrack);
+            } else if (localStream) {
+                peerState.pc.addTrack(newTrack, localStream);
+            }
+        }
+    }
+
+    async function toggleScreenShare() {
+        if (!localStream) return;
+        if (!localState.screenSharing) {
+            screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+            const screenTrack = screenStream.getVideoTracks()[0];
+            screenTrack.onended = async function() {
+                if (cameraStream) {
+                    await replaceOutgoingVideoTrack(cameraStream.getVideoTracks()[0], cameraStream);
+                    localState.screenSharing = false;
+                    updateBadges();
+                    classroomState.textContent = 'تم إيقاف مشاركة الشاشة والعودة إلى الكاميرا.';
+                    broadcastPresence();
+                }
+            };
+            await replaceOutgoingVideoTrack(screenTrack, screenStream);
+            localState.screenSharing = true;
+            classroomState.textContent = 'تم تشغيل مشاركة الشاشة.';
+        } else if (cameraStream) {
+            await replaceOutgoingVideoTrack(cameraStream.getVideoTracks()[0], cameraStream);
+            localState.screenSharing = false;
+            classroomState.textContent = 'تم إيقاف مشاركة الشاشة والعودة إلى الكاميرا.';
+        }
+        updateBadges();
+        broadcastPresence();
+    }
+
+    bindTilePinning(localTile);
+    bindTilePinning(remoteTile);
+    updateClassroomLayout();
+
+    function scheduleSocketReconnect() {
+        if (socketReconnectTimer) return;
+        socketReconnectAttempts += 1;
+        const delay = Math.min(8000, 1200 * socketReconnectAttempts);
+        socketReconnectTimer = window.setTimeout(function() {
+            socketReconnectTimer = null;
+            setupSocket();
+        }, delay);
+    }
+
+    async function setupSocket() {
+        const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+        roomSocket = new WebSocket(`${protocol}://${window.location.host}${wsPath}`);
+
+        roomSocket.addEventListener('open', function() {
+            socketReconnectAttempts = 0;
+            setTransportLabel('ربط الفصل المحلي', true);
+        });
+
+        roomSocket.addEventListener('message', async function(event) {
+            const data = JSON.parse(event.data);
+            if (data.type === 'room_state' && (data.peers || []).length) {
+                remotePeerId = data.peers[0].user_id;
+                ensurePeerState();
+            }
+            if (data.type === 'peer_joined' && data.participant) {
+                remotePeerId = data.participant.user_id;
+                classroomState.textContent = 'دخل الطرف الآخر، جارٍ إنشاء القناة المباشرة.';
+                ensurePeerState();
+            }
+            if (data.type === 'signal') {
+                await handleSignal(Number(data.sender_id), data.payload || {});
+            }
+            if (data.type === 'peer_left') {
+                remoteVideo.srcObject = null;
+                remoteVideoFallback.style.display = 'grid';
+                remoteAudioBadge.textContent = 'بانتظار الصوت';
+                remoteAudioBadge.className = 'tile-badge warn';
+                remoteVideoBadge.textContent = 'بانتظار الصورة';
+                remoteVideoBadge.className = 'tile-badge warn';
+                classroomState.textContent = 'غادر الطرف الآخر الفصل المباشر.';
+            }
+            if (data.type === 'peer_presence') {
+                const payload = data.payload || {};
+                remoteAudioBadge.textContent = payload.audioEnabled ? 'صوت شغال' : 'صوت مكتوم';
+                remoteAudioBadge.className = `tile-badge ${payload.audioEnabled ? 'live' : 'warn'}`;
+                remoteVideoBadge.textContent = payload.videoEnabled ? (payload.screenSharing ? 'مشاركة شاشة' : 'صورة شغالة') : 'صورة متوقفة';
+                remoteVideoBadge.className = `tile-badge ${payload.videoEnabled ? (payload.screenSharing ? 'share' : 'live') : 'warn'}`;
+            }
+        });
+
+        roomSocket.addEventListener('close', function() {
+            setTransportLabel('انقطع الربط الحي', false);
+            scheduleSocketReconnect();
+        });
+    }
+
+    toggleAudioBtn.addEventListener('click', function() {
+        if (!localStream) return;
+        if (!localStream.getAudioTracks().length) {
+            if (window.eduverseToast) {
+                window.eduverseToast('لا يوجد مايك متاح حالياً على هذا الجهاز.', 'warning');
+            }
+            return;
+        }
+        localState.audioEnabled = !localState.audioEnabled;
+        localStream.getAudioTracks().forEach(function(track) { track.enabled = localState.audioEnabled; });
+        classroomState.textContent = localState.audioEnabled ? 'تم تشغيل المايك.' : 'تم كتم المايك.';
+        updateBadges();
+        broadcastPresence();
+    });
+
+    toggleVideoBtn.addEventListener('click', function() {
+        if (!localStream) return;
+        if (!localStream.getVideoTracks().length) {
+            if (window.eduverseToast) {
+                window.eduverseToast('لا توجد كاميرا متاحة حالياً على هذا الجهاز.', 'warning');
+            }
+            return;
+        }
+        localState.videoEnabled = !localState.videoEnabled;
+        localStream.getVideoTracks().forEach(function(track) { track.enabled = localState.videoEnabled; });
+        classroomState.textContent = localState.videoEnabled ? 'تم تشغيل الكاميرا.' : 'تم إيقاف الكاميرا.';
+        updateBadges();
+        broadcastPresence();
+    });
+
+    shareScreenBtn.addEventListener('click', async function() {
+        try {
+            await toggleScreenShare();
+        } catch (error) {
+            if (window.eduverseToast) {
+                window.eduverseToast('تعذر بدء مشاركة الشاشة من هذا المتصفح حالياً.', 'warning');
+            }
+        }
+    });
+
+    retryMediaBtn.addEventListener('click', async function() {
+        try {
+            stopStream(screenStream);
+            stopStream(cameraStream);
+            await initMedia();
+            if (peerState && peerState.pc) {
+                peerState.pc.close();
+                peerState = null;
+            }
+            if (remotePeerId) {
+                ensurePeerState();
+            }
+            if (window.eduverseToast) {
+                window.eduverseToast('تمت إعادة تهيئة الأجهزة المحلية.', 'success');
+            }
+            refreshDeviceDiagnostics();
+        } catch (error) {
+            const message = buildMediaErrorMessage(error);
+            classroomState.textContent = message;
+            if (window.eduverseToast) {
+                window.eduverseToast(message, 'error');
+            }
+            refreshDeviceDiagnostics();
+        }
+    });
+
+    leaveRoomBtn.addEventListener('click', function() {
+        classroomState.textContent = 'جارٍ الخروج من الفصل المباشر...';
+        window.location.href = backUrl;
+    });
+
+    updateBadges();
+    refreshDeviceDiagnostics();
+    refreshConnectionStats();
+    initMedia().catch(function(error) {
+        console.error('booking classroom init failed', error);
+        const message = buildMediaErrorMessage(error);
+        classroomState.textContent = message;
+        localVideoFallback.textContent = message;
+        if (window.eduverseToast) {
+            window.eduverseToast(message, 'error');
+        }
+    }).finally(function() {
+        setupSocket();
+    });
+    statsTimer = window.setInterval(function() {
+        if (document.hidden) return;
+        refreshConnectionStats();
+    }, 4000);
+
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) {
+            refreshConnectionStats();
+        }
+    });
+
+    window.addEventListener('beforeunload', function() {
+        if (statsTimer) window.clearInterval(statsTimer);
+        if (socketReconnectTimer) window.clearTimeout(socketReconnectTimer);
+        if (roomSocket && roomSocket.readyState === WebSocket.OPEN) {
+            roomSocket.close();
+        }
+    });
+});
+</script>
+{% endblock %}

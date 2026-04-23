@@ -1,0 +1,662 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}EduVerse Dashboard{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="dashboard-body">
+
+<div class="dashboard-layout">
+    <!-- SIDENAV -->
+    <aside class="dashboard-sidebar">
+        <a href="{% url 'home' %}" class="sidebar-brand">
+            <i class="fas fa-graduation-cap"></i>
+            EduVerse
+        </a>
+
+        <ul class="sidebar-menu">
+            {% if 'student' in user_roles %}
+                <li class="menu-item">
+                    <a href="{% url 'accounts:student_dashboard' %}" class="menu-link {% if request.resolver_match.view_name == 'accounts:student_dashboard' %}active{% endif %}">
+                        <i class="fas fa-th-large"></i> <span>لوحة التحكم</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="{% url 'courses:course_list' %}" class="menu-link {% if 'courses' in request.resolver_match.app_name %}active{% endif %}">
+                        <i class="fas fa-book-open"></i> <span>دوراتي</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="{% url 'bookings:student_booking_list' %}" class="menu-link {% if 'bookings' in request.resolver_match.app_name %}active{% endif %}">
+                        <i class="fas fa-calendar-alt"></i> <span>جدولي</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="{% url 'assessments:student_assessment_list' %}" class="menu-link {% if 'assessments' in request.resolver_match.app_name %}active{% endif %}">
+                        <i class="fas fa-chart-pie"></i> <span>تقدمي</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="{% url 'notifications:student_live_calls' %}" class="menu-link {% if request.resolver_match.view_name == 'notifications:student_live_calls' %}active{% endif %}">
+                        <i class="fas fa-phone-volume"></i> <span>الاتصال المباشر</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="{% url 'notifications:notification_list' %}" class="menu-link {% if request.resolver_match.view_name == 'notifications:notification_list' %}active{% endif %}">
+                        <i class="fas fa-bell"></i> <span>الإشعارات</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="{% url 'notifications:message_list' %}" class="menu-link {% if request.resolver_match.view_name == 'notifications:message_list' %}active{% endif %}">
+                        <i class="fas fa-envelope"></i> <span>الرسائل</span>
+                    </a>
+                </li>
+            {% elif 'teacher' in user_roles %}
+                <li class="menu-item">
+                    <a href="{% url 'accounts:teacher_dashboard' %}" class="menu-link {% if request.resolver_match.view_name == 'accounts:teacher_dashboard' %}active{% endif %}">
+                        <i class="fas fa-chalkboard-teacher"></i> <span>لوحة المعلم</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="{% url 'courses:teacher_course_list' %}" class="menu-link {% if 'courses' in request.resolver_match.app_name %}active{% endif %}">
+                        <i class="fas fa-video"></i> <span>إدارة الكورسات</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="{% url 'bookings:teacher_booking_list' %}" class="menu-link {% if 'bookings' in request.resolver_match.app_name %}active{% endif %}">
+                        <i class="fas fa-users"></i> <span>طلابي</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="{% url 'assessments:teacher_assessment_list' %}" class="menu-link {% if 'assessments' in request.resolver_match.app_name %}active{% endif %}">
+                        <i class="fas fa-clipboard-check"></i> <span>التقييمات</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="{% url 'payments:payment_list' %}" class="menu-link {% if 'payments' in request.resolver_match.app_name %}active{% endif %}">
+                        <i class="fas fa-wallet"></i> <span>الأرباح</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="{% url 'notifications:teacher_live_calls' %}" class="menu-link {% if request.resolver_match.view_name == 'notifications:teacher_live_calls' %}active{% endif %}">
+                        <i class="fas fa-broadcast-tower"></i> <span>البث والاتصال المباشر</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="{% url 'notifications:notification_list' %}" class="menu-link {% if request.resolver_match.view_name == 'notifications:notification_list' %}active{% endif %}">
+                        <i class="fas fa-bell"></i> <span>الإشعارات</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="{% url 'notifications:message_list' %}" class="menu-link {% if request.resolver_match.view_name == 'notifications:message_list' %}active{% endif %}">
+                        <i class="fas fa-envelope"></i> <span>الرسائل</span>
+                    </a>
+                </li>
+            {% elif 'admin' in user_roles or 'super_admin' in user_roles or user.is_staff %}
+                <li class="menu-item">
+                    <a href="{% url 'accounts:admin_dashboard' %}" class="menu-link {% if request.resolver_match.view_name == 'accounts:admin_dashboard' %}active{% endif %}">
+                        <i class="fas fa-user-shield"></i> <span>الإدارة</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="{% url 'admin:index' %}" class="menu-link" target="_blank">
+                        <i class="fas fa-users-cog"></i> <span>لوحة الأدمن (Django)</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="{% url 'payments:payment_list' %}" class="menu-link">
+                        <i class="fas fa-file-invoice-dollar"></i> <span>المالية</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="{% url 'notifications:notification_list' %}" class="menu-link {% if request.resolver_match.app_name == 'notifications' and request.resolver_match.view_name == 'notifications:notification_list' %}active{% endif %}">
+                        <i class="fas fa-bell"></i> <span>الإشعارات</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="{% url 'notifications:message_list' %}" class="menu-link {% if request.resolver_match.app_name == 'notifications' and request.resolver_match.view_name == 'notifications:message_list' %}active{% endif %}">
+                        <i class="fas fa-envelope"></i> <span>الرسائل</span>
+                    </a>
+                </li>
+            {% endif %}
+
+            <div class="sidebar-divider" style="margin: 20px 0; border-top: 1px solid var(--dash-border);"></div>
+
+            <li class="menu-item">
+                <a href="{% url 'accounts:profile' %}" class="menu-link {% if request.resolver_match.view_name == 'accounts:profile' %}active{% endif %}">
+                    <i class="fas fa-user-circle"></i> <span>الملف الشخصي</span>
+                </a>
+            </li>
+        </ul>
+
+        <div class="sidebar-footer">
+            <a href="{% url 'accounts:logout' %}" class="menu-link" style="color: var(--dash-danger);">
+                <i class="fas fa-sign-out-alt"></i> <span>تسجيل خروج</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- CONTENT -->
+    <main class="dashboard-main">
+        <header class="dashboard-topbar">
+            <div class="welcome-text">
+                <h2>مرحباً، {{ user.first_name|default:user.username }} 👋</h2>
+                <p>إليك نظرة عامة على نشاطك اليوم</p>
+            </div>
+            
+            <div class="user-profile">
+                <a href="{% url 'notifications:notification_list' %}" class="menu-link" style="position: relative; min-width: 48px; justify-content: center;">
+                    <i class="fas fa-bell"></i>
+                    {% if unread_notifications_count %}
+                    <span id="notificationUnreadBadge" style="position: absolute; top: -6px; left: -2px; min-width: 20px; height: 20px; border-radius: 999px; background: #ef4444; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; padding: 0 6px;">
+                        {{ unread_notifications_count }}
+                    </span>
+                    {% else %}
+                    <span id="notificationUnreadBadge" style="display:none; position: absolute; top: -6px; left: -2px; min-width: 20px; height: 20px; border-radius: 999px; background: #ef4444; color: #fff; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; padding: 0 6px;"></span>
+                    {% endif %}
+                </a>
+                <a href="{% url 'notifications:message_list' %}?filter=unread" class="menu-link" id="messageInboxShortcut" style="position: relative; min-width: 48px; justify-content: center;">
+                    <i class="fas fa-envelope"></i>
+                    {% if unread_messages_count %}
+                    <span id="messageUnreadBadge" style="position: absolute; top: -6px; left: -2px; min-width: 20px; height: 20px; border-radius: 999px; background: #0ea5e9; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; padding: 0 6px;">
+                        {{ unread_messages_count }}
+                    </span>
+                    {% else %}
+                    <span id="messageUnreadBadge" style="display:none; position: absolute; top: -6px; left: -2px; min-width: 20px; height: 20px; border-radius: 999px; background: #0ea5e9; color: #fff; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; padding: 0 6px;"></span>
+                    {% endif %}
+                </a>
+                <div class="user-avatar" style="overflow: hidden; padding: 0; border: 2px solid var(--dash-border);">
+                    {% if user.avatar %}
+                        <img src="{{ user.avatar.url }}" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover;">
+                    {% else %}
+                        {{ user.first_name|first|upper|default:user.email|first|upper }}
+                    {% endif %}
+                </div>
+            </div>
+        </header>
+
+        {% block dashboard_content %}
+        {% endblock %}
+    </main>
+</div>
+
+<div id="incomingCallModal" style="display:none; position:fixed; inset:0; z-index:9999; background:radial-gradient(circle at top, rgba(14,165,233,.18), rgba(2,6,23,.88) 42%, rgba(2,6,23,.96) 100%); backdrop-filter: blur(10px); padding:24px;">
+    <div style="max-width: 880px; min-height: min(84vh, 760px); margin: 4vh auto; background: linear-gradient(180deg, rgba(15,23,42,.98), rgba(17,24,39,.98)); border:1px solid rgba(59,130,246,.22); border-radius:32px; padding:32px; box-shadow: 0 28px 60px rgba(2,6,23,.55); display:grid; grid-template-columns: 280px 1fr; gap:24px; align-items:stretch;">
+        <div style="border-radius:28px; padding:28px 22px; background:linear-gradient(180deg, rgba(14,165,233,.2), rgba(37,99,235,.08)); border:1px solid rgba(125,211,252,.14); display:grid; align-content:center; justify-items:center; text-align:center;">
+            <div id="incomingCallPulse" style="width:126px; height:126px; border-radius:50%; display:grid; place-items:center; background:radial-gradient(circle, rgba(56,189,248,.95), rgba(37,99,235,.88)); color:#fff; font-size:42px; box-shadow:0 0 0 0 rgba(56,189,248,.45); animation:incomingPulse 1.4s infinite; overflow:hidden;">
+                <i id="incomingCallPulseIcon" class="fas fa-phone-volume"></i>
+                <img id="incomingCallAvatar" src="" alt="Caller avatar" style="display:none; width:100%; height:100%; object-fit:cover;">
+            </div>
+            <div style="margin-top:22px; font-size:1.55rem; font-weight:800; color:#fff;">اتصال مباشر وارد</div>
+            <div id="incomingCallState" style="margin-top:8px; color:#7dd3fc; font-weight:800;">يرن الآن</div>
+            <div id="incomingCallCaller" style="color:#dbeafe; margin-top:12px; line-height:1.9;"></div>
+        </div>
+        <div style="display:grid; gap:18px; align-content:center;">
+            <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                <span style="display:inline-flex; align-items:center; gap:8px; padding:10px 14px; border-radius:999px; background:rgba(34,197,94,.12); color:#bbf7d0; border:1px solid rgba(34,197,94,.18); font-weight:800;">
+                    <i class="fas fa-bell"></i> تنبيه حي
+                </span>
+                <span id="incomingCallTransport" style="display:inline-flex; align-items:center; gap:8px; padding:10px 14px; border-radius:999px; background:rgba(249,115,22,.12); color:#fed7aa; border:1px solid rgba(249,115,22,.18); font-weight:800;">
+                    <i class="fas fa-signal"></i> انتظار التحديث
+                </span>
+            </div>
+            <div id="incomingCallTopic" style="font-size:2rem; font-weight:900; line-height:1.4; color:#fff;"></div>
+            <div id="incomingCallMessage" style="padding:18px 20px; border-radius:22px; background:rgba(59,130,246,.08); color:#dbeafe; line-height:2; border:1px solid rgba(59,130,246,.14);"></div>
+            <div id="incomingCallMeta" style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px;"></div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                <button type="button" id="incomingCallSoundButton" class="menu-link" style="display:none; min-width:180px; justify-content:center; background:rgba(245,158,11,.14); color:#fde68a; border:1px solid rgba(245,158,11,.22);">
+                    <i class="fas fa-volume-up"></i> تشغيل نغمة الرنين
+                </button>
+                <span id="incomingCallSoundHint" style="display:none; color:#fde68a; font-weight:700;">قد يكون المتصفح منع الصوت تلقائياً. اضغط لتفعيل الرنين.</span>
+            </div>
+            <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:6px;">
+                <form id="incomingCallAcceptForm" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="menu-link" style="min-width:150px; justify-content:center; background:linear-gradient(135deg,#10b981,#059669); color:#fff; border:none; box-shadow:0 16px 30px rgba(16,185,129,.22);">
+                        <i class="fas fa-phone"></i> قبول
+                    </button>
+                </form>
+                <form id="incomingCallRejectForm" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="menu-link" style="min-width:150px; justify-content:center; background:linear-gradient(135deg,#ef4444,#dc2626); color:#fff; border:none; box-shadow:0 16px 30px rgba(239,68,68,.22);">
+                        <i class="fas fa-phone-slash"></i> رفض
+                    </button>
+                </form>
+                <a id="incomingCallRoomLink" href="#" class="menu-link" style="min-width:170px; justify-content:center; background:rgba(59,130,246,.16); color:#dbeafe;">
+                    <i class="fas fa-video"></i> فتح الغرفة
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes incomingPulse {
+    0% { box-shadow:0 0 0 0 rgba(56,189,248,.42); transform:scale(1); }
+    70% { box-shadow:0 0 0 26px rgba(56,189,248,0); transform:scale(1.03); }
+    100% { box-shadow:0 0 0 0 rgba(56,189,248,0); transform:scale(1); }
+}
+@media (max-width: 920px) {
+    #incomingCallModal > div { grid-template-columns:1fr !important; min-height:auto !important; }
+    #incomingCallMeta { grid-template-columns:1fr !important; }
+}
+</style>
+
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const applyLazyMediaHints = function() {
+        document.querySelectorAll('img:not([loading])').forEach(function(img) {
+            img.setAttribute('loading', 'lazy');
+            img.setAttribute('decoding', 'async');
+        });
+        document.querySelectorAll('video').forEach(function(video) {
+            if (!video.hasAttribute('preload')) {
+                video.setAttribute('preload', 'metadata');
+            }
+            if (!video.closest('.video-player') && !video.closest('.ambient-video-card') && !video.closest('.video-grid')) {
+                video.dataset.lazyMedia = 'true';
+            }
+        });
+    };
+
+    if ('requestIdleCallback' in window) {
+        requestIdleCallback(applyLazyMediaHints, { timeout: 1200 });
+    } else {
+        setTimeout(applyLazyMediaHints, 120);
+    }
+
+    window.eduverseToast = function(message, level, options) {
+        if (!message || typeof Toastify === 'undefined') return;
+        const palette = {
+            error: "linear-gradient(120deg, #dc2626, #f97316)",
+            danger: "linear-gradient(120deg, #dc2626, #f97316)",
+            success: "linear-gradient(120deg, #059669, #0ea5e9)",
+            warning: "linear-gradient(120deg, #d97706, #f59e0b)",
+            info: "linear-gradient(120deg, #0284c7, #2563eb)",
+        };
+        const config = options || {};
+        Toastify({
+            text: message,
+            duration: config.duration || 5000,
+            close: true,
+            gravity: config.gravity || "top",
+            position: config.position || "left",
+            stopOnFocus: true,
+            destination: config.destination || undefined,
+            style: {
+                background: palette[level] || palette.info,
+                borderRadius: "14px",
+                fontFamily: "'Cairo', sans-serif",
+                fontWeight: "700",
+                boxShadow: "0 12px 24px rgba(2,6,23,0.2)"
+            }
+        }).showToast();
+    };
+
+    {% if messages %}
+        const renderedToastMessages = new Set();
+        {% for message in messages %}
+            if (!renderedToastMessages.has("{{ message|escapejs }}")) {
+                renderedToastMessages.add("{{ message|escapejs }}");
+            window.eduverseToast("{{ message|escapejs }}", "{% if 'error' in message.tags or 'danger' in message.tags %}error{% elif 'success' in message.tags %}success{% elif 'warning' in message.tags %}warning{% else %}info{% endif %}");
+            }
+        {% endfor %}
+    {% endif %}
+
+    const revealTargets = document.querySelectorAll('.dashboard-section, .stat-card, .course-card, .assessment-card');
+    revealTargets.forEach((el, idx) => {
+        el.classList.add('reveal-up');
+        if (idx % 3 === 1) el.classList.add('reveal-delay-1');
+        if (idx % 3 === 2) el.classList.add('reveal-delay-2');
+    });
+
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches && 'IntersectionObserver' in window) {
+        const observer = new IntersectionObserver((entries, obs) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('in-view');
+                    obs.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.12 });
+        revealTargets.forEach(el => observer.observe(el));
+    } else {
+        revealTargets.forEach(el => el.classList.add('in-view'));
+    }
+
+    const callModal = document.getElementById('incomingCallModal');
+    const notificationUnreadBadge = document.getElementById('notificationUnreadBadge');
+    const messageUnreadBadge = document.getElementById('messageUnreadBadge');
+    const incomingCallAvatar = document.getElementById('incomingCallAvatar');
+    const incomingCallPulseIcon = document.getElementById('incomingCallPulseIcon');
+    const callerEl = document.getElementById('incomingCallCaller');
+    const topicEl = document.getElementById('incomingCallTopic');
+    const messageEl = document.getElementById('incomingCallMessage');
+    const metaEl = document.getElementById('incomingCallMeta');
+    const stateEl = document.getElementById('incomingCallState');
+    const transportEl = document.getElementById('incomingCallTransport');
+    const soundButton = document.getElementById('incomingCallSoundButton');
+    const soundHint = document.getElementById('incomingCallSoundHint');
+    const acceptForm = document.getElementById('incomingCallAcceptForm');
+    const rejectForm = document.getElementById('incomingCallRejectForm');
+    const roomLink = document.getElementById('incomingCallRoomLink');
+    const messageInboxShortcut = document.getElementById('messageInboxShortcut');
+    let lastIncomingCallId = null;
+    let callSocket = null;
+    let audioContext = null;
+    let ringInterval = null;
+    let liveTransport = 'polling';
+    const seenRealtimeMessages = new Set();
+    let messageFeedPrimed = false;
+    let audioUnlocked = false;
+
+    function setUnreadBadge(element, count) {
+        if (!element) return;
+        if (count > 0) {
+            element.style.display = 'inline-flex';
+            element.textContent = count;
+        } else {
+            element.style.display = 'none';
+            element.textContent = '';
+        }
+    }
+
+    function setTransportState(label, tone) {
+        if (!transportEl) return;
+        const palettes = {
+            websocket: ['rgba(34,197,94,.12)', '#bbf7d0', 'rgba(34,197,94,.18)', 'بث حي عبر WebSocket'],
+            polling: ['rgba(249,115,22,.12)', '#fed7aa', 'rgba(249,115,22,.18)', 'متابعة دورية'],
+            fallback: ['rgba(148,163,184,.14)', '#e2e8f0', 'rgba(148,163,184,.18)', 'وضع احتياطي'],
+        };
+        const selected = palettes[tone] || palettes.polling;
+        transportEl.style.background = selected[0];
+        transportEl.style.color = selected[1];
+        transportEl.style.borderColor = selected[2];
+        transportEl.innerHTML = `<i class="fas fa-signal"></i> ${label || selected[3]}`;
+    }
+
+    async function ensureAudioReady() {
+        if (!window.AudioContext && !window.webkitAudioContext) return false;
+        if (!audioContext) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioContext.state === 'suspended') {
+            await audioContext.resume();
+        }
+        audioUnlocked = audioContext.state === 'running';
+        if (soundButton) soundButton.style.display = audioUnlocked ? 'none' : 'inline-flex';
+        if (soundHint) soundHint.style.display = audioUnlocked ? 'none' : 'inline';
+        return audioUnlocked;
+    }
+
+    function playRingBurst() {
+        if (!audioContext || audioContext.state !== 'running') return;
+        const start = audioContext.currentTime;
+        const notes = [
+            { time: start, frequency: 740, duration: 0.18 },
+            { time: start + 0.24, frequency: 620, duration: 0.22 },
+            { time: start + 0.56, frequency: 740, duration: 0.2 },
+        ];
+
+        notes.forEach((note) => {
+            const oscillator = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            oscillator.type = 'triangle';
+            oscillator.frequency.setValueAtTime(note.frequency, note.time);
+            gain.gain.setValueAtTime(0.0001, note.time);
+            gain.gain.exponentialRampToValueAtTime(0.12, note.time + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.0001, note.time + note.duration);
+            oscillator.connect(gain);
+            gain.connect(audioContext.destination);
+            oscillator.start(note.time);
+            oscillator.stop(note.time + note.duration + 0.02);
+        });
+    }
+
+    async function playIncomingRing() {
+        try {
+            const ready = await ensureAudioReady();
+            if (!ready) return;
+            if (ringInterval) return;
+            playRingBurst();
+            ringInterval = setInterval(() => {
+                playRingBurst();
+            }, 1850);
+        } catch (error) {
+            console.warn('ringtone playback unavailable', error);
+            if (soundButton) soundButton.style.display = 'inline-flex';
+            if (soundHint) soundHint.style.display = 'inline';
+        }
+    }
+
+    function stopIncomingRing() {
+        if (ringInterval) {
+            clearInterval(ringInterval);
+            ringInterval = null;
+        }
+        if (soundButton) soundButton.style.display = 'none';
+        if (soundHint) soundHint.style.display = 'none';
+    }
+
+    function closeIncomingCallOverlay() {
+        stopIncomingRing();
+        if (callModal) callModal.style.display = 'none';
+    }
+
+    function showIncomingCall(call) {
+        if (!callModal || !call || lastIncomingCallId === call.call_id) return;
+        lastIncomingCallId = call.call_id;
+        callerEl.textContent = `المتصل: ${call.caller_name}`;
+        if (incomingCallAvatar && incomingCallPulseIcon) {
+            if (call.caller_avatar) {
+                incomingCallAvatar.src = call.caller_avatar;
+                incomingCallAvatar.style.display = 'block';
+                incomingCallPulseIcon.style.display = 'none';
+            } else {
+                incomingCallAvatar.style.display = 'none';
+                incomingCallAvatar.src = '';
+                incomingCallPulseIcon.style.display = 'inline-block';
+            }
+        }
+        topicEl.textContent = call.title || 'اتصال مباشر';
+        messageEl.textContent = call.message || 'لا توجد رسالة مرفقة.';
+        stateEl.textContent = 'يرن الآن';
+        metaEl.innerHTML = `
+            <div style="padding:14px 16px; border-radius:18px; background:rgba(15,23,42,.62); border:1px solid rgba(96,165,250,.16); color:#dbeafe;">
+                <strong style="display:block; margin-bottom:6px; color:#fff;">وقت الاتصال</strong>
+                <span>${call.created_at}</span>
+            </div>
+            <div style="padding:14px 16px; border-radius:18px; background:rgba(15,23,42,.62); border:1px solid rgba(96,165,250,.16); color:#dbeafe;">
+                <strong style="display:block; margin-bottom:6px; color:#fff;">حالة الاتصال</strong>
+                <span>بانتظار ردك الآن</span>
+            </div>
+        `;
+        acceptForm.action = call.accept_url;
+        rejectForm.action = call.reject_url;
+        roomLink.href = call.room_url;
+        callModal.style.display = 'block';
+        playIncomingRing();
+    }
+
+    async function pollIncomingCalls() {
+        try {
+            const response = await fetch('{% url "notifications:incoming_call_alerts" %}', {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            if (!response.ok) return;
+            const data = await response.json();
+            if (data.calls && data.calls.length) {
+                showIncomingCall(data.calls[0]);
+            } else if (lastIncomingCallId !== null && callModal && callModal.style.display === 'block') {
+                closeIncomingCallOverlay();
+                lastIncomingCallId = null;
+            }
+        } catch (error) {
+            console.warn('incoming call polling failed', error);
+        }
+    }
+
+    async function pollRealtimeMessages() {
+        try {
+            const response = await fetch('{% url "notifications:message_activity_feed" %}', {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            if (!response.ok) return;
+            const data = await response.json();
+            setUnreadBadge(messageUnreadBadge, data.unread_count || 0);
+            (data.messages || []).forEach((message) => {
+                const key = `message-${message.id}`;
+                if (seenRealtimeMessages.has(key)) return;
+                seenRealtimeMessages.add(key);
+                if (!messageFeedPrimed || message.is_read) return;
+                window.eduverseToast(`رسالة جديدة من ${message.sender_name}: ${message.subject}`, 'info', { destination: message.detail_url });
+            });
+            messageFeedPrimed = true;
+        } catch (error) {
+            console.warn('message polling failed', error);
+        }
+    }
+
+    async function pollUnreadNotifications() {
+        try {
+            const response = await fetch('{% url "notifications:unread_count" %}', {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            if (!response.ok) return;
+            const data = await response.json();
+            setUnreadBadge(notificationUnreadBadge, data.unread_count || 0);
+        } catch (error) {
+            console.warn('notification polling failed', error);
+        }
+    }
+
+    async function unlockAudioFromInteraction() {
+        try {
+            await ensureAudioReady();
+            if (callModal && callModal.style.display === 'block') {
+                playIncomingRing();
+            }
+        } catch (error) {
+            console.warn('audio unlock failed', error);
+        }
+    }
+
+    ['pointerdown', 'keydown', 'touchstart'].forEach((eventName) => {
+        document.addEventListener(eventName, unlockAudioFromInteraction, { once: true });
+    });
+
+    if (soundButton) {
+        soundButton.addEventListener('click', function() {
+            unlockAudioFromInteraction();
+        });
+    }
+
+    {% if 'student' in user_roles or 'teacher' in user_roles %}
+    try {
+        const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+        callSocket = new WebSocket(`${protocol}://${window.location.host}/ws/notifications/`);
+        callSocket.onopen = function() {
+            liveTransport = 'websocket';
+            setTransportState('بث حي عبر WebSocket', 'websocket');
+        };
+        callSocket.onmessage = function(event) {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'notification' && data.notification) {
+                    if (data.notification.type === 'call') {
+                        window.dispatchEvent(new CustomEvent('eduverse:notification', { detail: data.notification }));
+                        pollIncomingCalls();
+                    } else if (data.notification.type === 'message') {
+                        pollRealtimeMessages();
+                    } else {
+                        window.dispatchEvent(new CustomEvent('eduverse:notification', { detail: data.notification }));
+                    }
+                }
+            } catch (error) {
+                console.warn('incoming call socket parse failed', error);
+            }
+        };
+        callSocket.onclose = function() {
+            liveTransport = 'fallback';
+            setTransportState('وضع احتياطي', 'fallback');
+        };
+    } catch (error) {
+        console.warn('incoming call socket unavailable', error);
+        liveTransport = 'fallback';
+        setTransportState('وضع احتياطي', 'fallback');
+    }
+    setTransportState('متابعة دورية', 'polling');
+    roomLink.addEventListener('click', function() {
+        closeIncomingCallOverlay();
+    });
+
+    async function submitIncomingCallAction(form, successState) {
+        const formData = new FormData(form);
+        stateEl.textContent = successState;
+        try {
+            const response = await fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            });
+            const contentType = response.headers.get('content-type') || '';
+            if (!contentType.includes('application/json')) {
+                throw new Error('وصل رد غير JSON من الخادم.');
+            }
+            const data = await response.json();
+            closeIncomingCallOverlay();
+            lastIncomingCallId = null;
+            if (data.redirect_url) {
+                window.location.href = data.redirect_url;
+            }
+        } catch (error) {
+            console.warn('incoming call action failed', error);
+            closeIncomingCallOverlay();
+            if (window.eduverseToast) {
+                window.eduverseToast('تعذر تنفيذ إجراء الاتصال مباشرة. تم تحديث الصفحة لإعادة المزامنة.', 'warning');
+            }
+            window.location.reload();
+        }
+    }
+
+    acceptForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        submitIncomingCallAction(acceptForm, 'تم القبول... جارٍ فتح الغرفة');
+    });
+
+    rejectForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        submitIncomingCallAction(rejectForm, 'تم رفض الاتصال');
+    });
+
+    if (messageInboxShortcut) {
+        messageInboxShortcut.addEventListener('click', function() {
+            if (messageUnreadBadge && messageUnreadBadge.textContent) {
+                this.href = '{% url "notifications:message_list" %}?filter=unread';
+            }
+        });
+    }
+    pollIncomingCalls();
+    setInterval(pollIncomingCalls, 5000);
+    {% endif %}
+    pollRealtimeMessages();
+    setInterval(pollRealtimeMessages, 7000);
+    pollUnreadNotifications();
+    setInterval(pollUnreadNotifications, 10000);
+});
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

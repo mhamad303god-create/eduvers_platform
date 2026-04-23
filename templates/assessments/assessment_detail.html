@@ -1,0 +1,94 @@
+{% extends 'layouts/dashboard_base.html' %}
+
+{% block title %}تفاصيل التقييم - EduVerse{% endblock %}
+
+{% block dashboard_content %}
+<section class="dashboard-section">
+    <div class="section-header">
+        <div class="section-title"><i class="fas fa-file-signature"></i> {{ assessment.title }}</div>
+        <a href="{% url 'assessments:student_assessment_list' %}" class="btn-dash btn-outline-dash">العودة للقائمة</a>
+    </div>
+
+    <div class="detail-grid">
+        <div class="overview-card">
+            <h3>نظرة عامة</h3>
+            <p>{{ assessment.description|default:"لا يوجد وصف لهذا التقييم." }}</p>
+            <div class="kv">
+                <div>النوع: <strong>{{ assessment.get_type_display }}</strong></div>
+                <div>المدة: <strong>{{ assessment.duration_minutes|default:"غير محددة" }} دقيقة</strong></div>
+                <div>الأسئلة: <strong>{{ question_count }}</strong></div>
+                <div>درجة النجاح: <strong>{{ assessment.passing_score }}%</strong></div>
+                <div>إجمالي النقاط: <strong>{{ assessment.total_points }}</strong></div>
+                <div>أقصى محاولات: <strong>{{ assessment.max_attempts }}</strong></div>
+            </div>
+
+            {% if can_take %}
+                <form method="post" action="{% url 'assessments:start_attempt' assessment.assessment_id %}" id="startForm">
+                    {% csrf_token %}
+                    <button type="button" class="btn-dash btn-primary-dash" onclick="startAttempt()">
+                        <i class="fas fa-play"></i> بدء محاولة جديدة
+                    </button>
+                </form>
+            {% else %}
+                <div class="locked-note">وصلت للحد الأقصى للمحاولات.</div>
+            {% endif %}
+        </div>
+
+        <div class="attempt-card">
+            <h3>سجل المحاولات</h3>
+            {% if attempts %}
+                <ul>
+                    {% for attempt in attempts %}
+                        <li>
+                            <span>المحاولة {{ attempt.attempt_number }} - {{ attempt.status }}</span>
+                            <strong>{% if attempt.percentage %}{{ attempt.percentage|floatformat:1 }}%{% else %}--{% endif %}</strong>
+                        </li>
+                    {% endfor %}
+                </ul>
+                <a href="{% url 'assessments:attempt_history' assessment.assessment_id %}" class="btn-dash btn-outline-dash" style="margin-top:10px;">عرض التفاصيل</a>
+            {% else %}
+                <p class="muted">لا توجد محاولات حتى الآن.</p>
+            {% endif %}
+
+            {% if best_attempt %}
+                <div class="best-score">أفضل نتيجة: {{ best_attempt.percentage|floatformat:1 }}%</div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<style>
+.detail-grid { display:grid; grid-template-columns: 1.3fr 1fr; gap: 16px; }
+.overview-card, .attempt-card { border:1px solid var(--dash-border); border-radius:14px; background:linear-gradient(165deg, rgba(19,35,61,.96), rgba(9,20,36,.96)); padding:16px; }
+.overview-card h3, .attempt-card h3 { margin:0 0 10px; color:#fff; }
+.overview-card p { color:var(--dash-text-muted); line-height:1.7; }
+.kv { display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin:12px 0 16px; color:#c6d6ea; }
+.attempt-card ul { list-style:none; margin:0; padding:0; display:grid; gap:8px; }
+.attempt-card li { display:flex; justify-content:space-between; background:rgba(15,23,42,.58); border:1px solid rgba(148,163,184,.25); border-radius:10px; padding:8px 10px; color:#dbeafe; }
+.muted { color:var(--dash-text-muted); }
+.best-score { margin-top:12px; color:#34d399; font-weight:700; }
+.locked-note { color:#f87171; background:rgba(239,68,68,.1); border:1px solid rgba(239,68,68,.3); border-radius:10px; padding:8px 10px; display:inline-block; }
+@media (max-width: 900px){ .detail-grid { grid-template-columns:1fr; } .kv { grid-template-columns:1fr; } }
+</style>
+
+<script>
+function startAttempt() {
+    fetch('{% url "assessments:start_attempt" assessment.assessment_id %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({})
+    })
+    .then(r => r.json().then(data => ({ok: r.ok, data})))
+    .then(({ok, data}) => {
+        if (!ok) {
+            alert(data.error || 'تعذر بدء المحاولة.');
+            return;
+        }
+        window.location.href = '{% url "assessments:assessment_take" assessment.assessment_id %}';
+    });
+}
+</script>
+{% endblock %}

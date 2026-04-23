@@ -1,0 +1,631 @@
+{% extends 'layouts/dashboard_base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}تصفح الكورسات - EduVerse{% endblock %}
+
+{% block dashboard_content %}
+<div class="dashboard-section">
+    <div class="section-header">
+        <div class="section-title">
+            <i class="fas fa-book-open"></i>
+            المكتبة التعليمية
+        </div>
+        {% if 'teacher' in user_roles %}
+        <a href="{% url 'courses:course_create' %}" class="btn-dash btn-primary-dash">
+            <i class="fas fa-plus"></i> إنشاء كورس جديد
+        </a>
+        {% endif %}
+    </div>
+
+    <div class="courses-toolbar">
+        <form method="get" class="filters-form">
+            <div class="filter-field">
+                <label>بحث</label>
+                {% render_field filter_form.search class="form-control" placeholder="ابحث عن كورس..." %}
+            </div>
+            <div class="filter-field">
+                <label>المادة</label>
+                {% render_field filter_form.subject class="form-control" %}
+            </div>
+            <div class="filter-field">
+                <label>المستوى</label>
+                {% render_field filter_form.level class="form-control" %}
+            </div>
+            <div class="filter-submit">
+                <button type="submit" class="btn-dash btn-primary-dash">
+                    <i class="fas fa-filter"></i> تصفية
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div class="courses-headline">
+        <h3><i class="fas fa-star"></i> كل الكورسات المنشورة من جميع الأساتذة</h3>
+        <span class="courses-count">{{ courses|length }} كورس</span>
+    </div>
+
+    {% if courses %}
+    <div class="courses-grid" id="coursesGrid">
+        {% for course in courses %}
+        <article class="course-card" data-course-card data-course-id="{{ course.course_id }}">
+            <div class="course-thumbnail" data-hover-video-card>
+                {% if course.thumbnail %}
+                <img src="{{ course.thumbnail.url }}" alt="{{ course.title }}" class="thumbnail-img">
+                {% else %}
+                <div class="thumbnail-placeholder">
+                    <i class="fas fa-image"></i>
+                </div>
+                {% endif %}
+
+                {% if course.preview_video %}
+                <video class="preview-video" muted playsinline preload="metadata">
+                    <source src="{{ course.preview_video.url }}" type="video/mp4">
+                </video>
+                <span class="course-video-badge"><i class="fas fa-play"></i> معاينة</span>
+                <button type="button" class="course-audio-indicator" data-audio-toggle aria-label="تبديل الصوت">
+                    <i class="fas fa-volume-xmark"></i>
+                </button>
+                {% endif %}
+
+                <span class="course-duration">{{ course.duration_minutes }} min</span>
+                {% if course.is_featured %}
+                <span class="course-badge-featured">مميز</span>
+                {% endif %}
+            </div>
+
+            <div class="course-content">
+                <div class="course-meta">
+                    <span>{{ course.subject.subject_name|default:"بدون مادة" }}</span>
+                    <span>{{ course.get_level_display }}</span>
+                </div>
+
+                <h3 class="course-title">
+                    <a href="{% url 'courses:course_detail' course.course_id %}">{{ course.title }}</a>
+                </h3>
+
+                <p class="course-description">{{ course.description|truncatechars:120 }}</p>
+
+                <div class="course-lessons-meta">
+                    <i class="fas fa-list"></i>
+                    <span>{{ course.published_lessons_count }} درس منشور</span>
+                </div>
+                {% if course.published_lessons %}
+                <ul class="lesson-snippet">
+                    {% for lesson in course.published_lessons|slice:":3" %}
+                    <li>{{ lesson.order_index }}. {{ lesson.title|truncatechars:42 }}</li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+
+                <div class="course-footer">
+                    <div class="course-teacher">
+                        <div class="teacher-avatar">
+                            {% if course.teacher.user.avatar %}
+                            <img src="{{ course.teacher.user.avatar.url }}" alt="{{ course.teacher.user.get_full_name|default:course.teacher.user.email }}">
+                            {% else %}
+                            <i class="fas fa-user"></i>
+                            {% endif %}
+                        </div>
+                        <div class="teacher-copy">
+                            <strong>{{ course.teacher.user.get_full_name|default:course.teacher.user.email }}</strong>
+                            <span>{{ course.subject.subject_name|default:"بدون مادة" }}</span>
+                        </div>
+                    </div>
+
+                    <div class="course-footer-side">
+                        <div class="course-price">
+                            {% if course.price > 0 %}
+                            <span class="price-paid">{{ course.price }} {{ course.currency }}</span>
+                            {% else %}
+                            <span class="price-free">مجاني</span>
+                            {% endif %}
+                        </div>
+                        <a href="{% url 'courses:course_detail' course.course_id %}" class="btn-dash btn-primary-dash course-open-btn">عرض الكورس</a>
+                    </div>
+                </div>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state" id="coursesEmptyState">
+        <i class="fas fa-search"></i>
+        <h3>لا توجد كورسات مطابقة حالياً</h3>
+        <p>غيّر معايير البحث أو انتظر إضافة كورسات جديدة من الأساتذة.</p>
+    </div>
+    {% endif %}
+
+    <div class="empty-state" id="coursesRealtimeEmptyState" {% if courses %}hidden{% endif %}>
+        <i class="fas fa-search"></i>
+        <h3>لا توجد كورسات مطابقة حالياً</h3>
+        <p>غيّر معايير البحث أو انتظر إضافة كورسات جديدة من الأساتذة.</p>
+    </div>
+</div>
+
+<style>
+.courses-toolbar {
+    background: rgba(255,255,255,0.03);
+    padding: 20px;
+    border-radius: 18px;
+    margin-bottom: 26px;
+    border: 1px solid var(--dash-border);
+}
+.filters-form {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+    gap: 15px;
+    align-items: end;
+}
+.filter-field label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+    color: var(--dash-text-muted);
+}
+.filter-field .form-control {
+    background: #0f131f;
+    border: 1px solid var(--dash-border);
+    color: white;
+    padding: 10px;
+    border-radius: 10px;
+    width: 100%;
+}
+.courses-headline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+.courses-headline h3 {
+    margin: 0;
+    font-size: 1.3rem;
+}
+.courses-headline i {
+    color: var(--dash-accent);
+}
+.courses-count {
+    color: #93c5fd;
+    font-weight: 700;
+}
+.courses-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 22px;
+}
+.course-card {
+    background: rgba(255,255,255,0.03);
+    border-radius: 20px;
+    border: 1px solid var(--dash-border);
+    overflow: hidden;
+    transition: transform 0.24s ease, box-shadow 0.24s ease, border-color 0.24s ease;
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+}
+.course-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 34px rgba(14, 165, 233, 0.18);
+    border-color: rgba(56,189,248,.45);
+}
+.course-thumbnail {
+    height: 220px;
+    position: relative;
+    background: #020916;
+    overflow: hidden;
+}
+.course-thumbnail::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(1, 7, 18, 0.82), rgba(1, 7, 18, 0.12));
+    pointer-events: none;
+    z-index: 3;
+}
+.course-thumbnail img,
+.course-thumbnail .preview-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.thumbnail-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255,255,255,0.2);
+}
+.thumbnail-placeholder i {
+    font-size: 3rem;
+}
+.preview-video {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    opacity: 0;
+    transition: transform 0.28s ease, opacity 0.18s ease;
+    pointer-events: none;
+}
+.course-thumbnail.is-previewing .preview-video {
+    opacity: 0.76;
+    transform: scale(1.03);
+}
+.course-thumbnail.is-previewing .thumbnail-img {
+    opacity: 0.48;
+}
+.course-duration {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(0,0,0,0.7);
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    direction: ltr;
+    backdrop-filter: blur(5px);
+    z-index: 4;
+}
+.course-badge-featured {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: var(--dash-accent);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    z-index: 4;
+}
+.course-video-badge {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(14, 165, 233, 0.9);
+    color: #fff;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    z-index: 4;
+}
+.course-audio-indicator {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    z-index: 5;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,.16);
+    background: rgba(2, 6, 23, 0.78);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+}
+.course-content {
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+.course-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+    font-size: 0.85rem;
+    color: var(--dash-primary);
+    font-weight: 600;
+}
+.course-title {
+    font-size: 1.18rem;
+    margin: 0 0 10px;
+    line-height: 1.6;
+}
+.course-title a {
+    text-decoration: none;
+    color: white;
+}
+.course-title a:hover {
+    color: var(--dash-primary);
+}
+.course-description {
+    color: var(--dash-text-muted);
+    font-size: 0.92rem;
+    margin-bottom: 18px;
+    line-height: 1.8;
+    min-height: 52px;
+}
+.course-lessons-meta {
+    display: inline-flex;
+    gap: 7px;
+    align-items: center;
+    color: #93c5fd;
+    font-size: 0.82rem;
+    margin-bottom: 10px;
+}
+.lesson-snippet {
+    margin: 0 0 18px;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 4px;
+}
+.lesson-snippet li {
+    font-size: 0.8rem;
+    color: var(--dash-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.course-footer {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 14px;
+    margin-top: auto;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+}
+.course-teacher {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.teacher-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: #2a324a;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.teacher-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.teacher-copy {
+    display: grid;
+    gap: 3px;
+}
+.teacher-copy strong {
+    font-size: 0.9rem;
+    color: #e2e8f0;
+}
+.teacher-copy span {
+    font-size: 0.8rem;
+    color: var(--dash-text-muted);
+}
+.course-footer-side {
+    display: grid;
+    gap: 10px;
+    justify-items: end;
+}
+.course-open-btn {
+    padding-inline: 16px;
+}
+.price-paid {
+    font-size: 1.05rem;
+    font-weight: bold;
+    color: #f59e0b;
+}
+.price-free {
+    font-size: 1.05rem;
+    font-weight: bold;
+    color: #10b981;
+}
+.empty-state {
+    text-align: center;
+    padding: 60px 24px;
+    color: var(--dash-text-muted);
+    background: linear-gradient(180deg, rgba(15,23,42,.88), rgba(17,24,39,.96));
+    border: 1px solid var(--dash-border);
+    border-radius: 24px;
+}
+.empty-state i {
+    font-size: 3.2rem;
+    margin-bottom: 18px;
+    opacity: .5;
+}
+@media (max-width: 980px) {
+    .filters-form {
+        grid-template-columns: 1fr 1fr;
+    }
+    .filter-submit {
+        grid-column: 1 / -1;
+    }
+}
+@media (max-width: 720px) {
+    .filters-form,
+    .courses-headline,
+    .course-footer {
+        grid-template-columns: 1fr;
+        display: grid;
+    }
+    .courses-grid {
+        grid-template-columns: 1fr;
+    }
+    .course-footer-side {
+        justify-items: stretch;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const coursesGrid = document.getElementById('coursesGrid');
+    const realtimeEmptyState = document.getElementById('coursesRealtimeEmptyState');
+    const countElement = document.querySelector('.courses-count');
+
+    function updateCount() {
+        if (!coursesGrid || !countElement) return;
+        countElement.textContent = `${coursesGrid.querySelectorAll('[data-course-card]').length} كورس`;
+        realtimeEmptyState.hidden = coursesGrid.querySelectorAll('[data-course-card]').length !== 0;
+    }
+
+    function bindHoverPreview(scope) {
+        scope.querySelectorAll('[data-hover-video-card]').forEach(function(card) {
+            if (card.dataset.hoverBound === 'true') return;
+            card.dataset.hoverBound = 'true';
+            const video = card.querySelector('.preview-video');
+            const toggle = card.querySelector('[data-audio-toggle]');
+            if (!video) return;
+
+            const setAudioIcon = function() {
+                if (!toggle) return;
+                toggle.innerHTML = video.muted ? '<i class="fas fa-volume-xmark"></i>' : '<i class="fas fa-volume-high"></i>';
+                toggle.title = video.muted ? 'الصوت مكتوم' : 'الصوت يعمل';
+            };
+
+            const startPreview = function() {
+                video.muted = true;
+                setAudioIcon();
+                card.classList.add('is-previewing');
+                video.currentTime = 0;
+                const playPromise = video.play();
+                if (playPromise && typeof playPromise.catch === 'function') {
+                    playPromise.catch(function() {});
+                }
+            };
+
+            const stopPreview = function() {
+                video.pause();
+                video.currentTime = 0;
+                video.muted = true;
+                setAudioIcon();
+                card.classList.remove('is-previewing');
+            };
+
+            card.addEventListener('mouseenter', startPreview);
+            card.addEventListener('mouseleave', stopPreview);
+            card.addEventListener('focusin', startPreview);
+            card.addEventListener('focusout', stopPreview);
+
+            if (toggle) {
+                toggle.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    video.muted = !video.muted;
+                    setAudioIcon();
+                    if (!card.classList.contains('is-previewing')) {
+                        startPreview();
+                    }
+                });
+                setAudioIcon();
+            }
+        });
+    }
+
+    function escapeHtml(value) {
+        return String(value || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function matchesCurrentFilters(course) {
+        const searchInput = document.querySelector('[name="search"]');
+        const subjectInput = document.querySelector('[name="subject"]');
+        const levelInput = document.querySelector('[name="level"]');
+
+        const search = ((searchInput && searchInput.value) || '').trim().toLowerCase();
+        const subject = subjectInput ? subjectInput.value : '';
+        const level = levelInput ? levelInput.value : '';
+
+        const matchesSearch = !search || `${course.title} ${course.description}`.toLowerCase().includes(search);
+        const matchesSubject = !subject || String(course.subject_id || '') === String(subject);
+        const matchesLevel = !level || String(course.level || '') === String(level);
+        return matchesSearch && matchesSubject && matchesLevel;
+    }
+
+    function buildCourseCard(course) {
+        const thumbnail = course.thumbnail_url
+            ? `<img src="${escapeHtml(course.thumbnail_url)}" alt="${escapeHtml(course.title)}" class="thumbnail-img">`
+            : `<div class="thumbnail-placeholder"><i class="fas fa-image"></i></div>`;
+        const previewVideo = course.preview_video_url
+            ? `
+                <video class="preview-video" muted playsinline preload="metadata">
+                    <source src="${escapeHtml(course.preview_video_url)}" type="video/mp4">
+                </video>
+                <span class="course-video-badge"><i class="fas fa-play"></i> معاينة</span>
+                <button type="button" class="course-audio-indicator" data-audio-toggle aria-label="تبديل الصوت">
+                    <i class="fas fa-volume-xmark"></i>
+                </button>
+              `
+            : '';
+
+        return `
+            <article class="course-card" data-course-card data-course-id="${course.id}">
+                <div class="course-thumbnail" data-hover-video-card>
+                    ${thumbnail}
+                    ${previewVideo}
+                    <span class="course-duration">${course.duration_minutes || 0} min</span>
+                    ${course.is_featured ? '<span class="course-badge-featured">مميز</span>' : ''}
+                </div>
+                <div class="course-content">
+                    <div class="course-meta">
+                        <span>${escapeHtml(course.subject_name || 'بدون مادة')}</span>
+                        <span>${escapeHtml(course.level_display || '')}</span>
+                    </div>
+                    <h3 class="course-title">
+                        <a href="${escapeHtml(course.detail_url)}">${escapeHtml(course.title)}</a>
+                    </h3>
+                    <p class="course-description">${escapeHtml((course.description || '').slice(0, 120))}</p>
+                    <div class="course-lessons-meta">
+                        <i class="fas fa-list"></i>
+                        <span>${course.published_lessons_count || 0} درس منشور</span>
+                    </div>
+                    <div class="course-footer">
+                        <div class="course-teacher">
+                            <div class="teacher-avatar">
+                                ${course.teacher_avatar_url ? `<img src="${escapeHtml(course.teacher_avatar_url)}" alt="${escapeHtml(course.teacher_name || '')}">` : '<i class="fas fa-user"></i>'}
+                            </div>
+                            <div class="teacher-copy">
+                                <strong>${escapeHtml(course.teacher_name || '')}</strong>
+                                <span>${escapeHtml(course.subject_name || 'بدون مادة')}</span>
+                            </div>
+                        </div>
+                        <div class="course-footer-side">
+                            <div class="course-price">
+                                ${course.price > 0 ? `<span class="price-paid">${course.price} ${escapeHtml(course.currency || '')}</span>` : '<span class="price-free">مجاني</span>'}
+                            </div>
+                            <a href="${escapeHtml(course.detail_url)}" class="btn-dash btn-primary-dash course-open-btn">عرض الكورس</a>
+                        </div>
+                    </div>
+                </div>
+            </article>
+        `;
+    }
+
+    if (coursesGrid) {
+        bindHoverPreview(coursesGrid);
+        updateCount();
+
+        window.addEventListener('eduverse:notification', function(event) {
+            const payload = event.detail || {};
+            if (payload.type !== 'course_published' || !payload.course) return;
+            if (!matchesCurrentFilters(payload.course)) return;
+            if (coursesGrid.querySelector(`[data-course-id="${payload.course.id}"]`)) return;
+            coursesGrid.insertAdjacentHTML('afterbegin', buildCourseCard(payload.course));
+            bindHoverPreview(coursesGrid);
+            updateCount();
+        });
+    }
+});
+</script>
+{% endblock %}

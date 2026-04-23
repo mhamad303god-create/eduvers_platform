@@ -1,0 +1,55 @@
+{% extends 'layouts/dashboard_base.html' %}
+
+{% block title %}{{ title }} - EduVerse{% endblock %}
+
+{% block dashboard_content %}
+<section class="dashboard-section">
+    <div class="section-header">
+        <div class="section-title">
+            <i class="fas fa-users"></i> {{ title }}
+        </div>
+        <a href="{% url 'accounts:admin_dashboard' %}" class="btn-dash btn-outline-dash">العودة للوحة الأدمن</a>
+    </div>
+
+    <div style="overflow-x:auto;">
+        <table class="dash-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>الاسم</th>
+                    <th>البريد</th>
+                    <th>الهاتف</th>
+                    <th>الأدوار</th>
+                    <th>كلمة المرور (Hash)</th>
+                    <th>الحالة</th>
+                    <th>الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in users_data %}
+                    <tr>
+                        <td>{{ item.user.id }}</td>
+                        <td>{{ item.user.get_full_name|default:item.user.email }}</td>
+                        <td>{{ item.user.email }}</td>
+                        <td>{{ item.user.phone|default:"-" }}</td>
+                        <td>{{ item.roles|join:", " }}</td>
+                        <td style="max-width:260px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="{{ item.password_hash }}">{{ item.password_hash }}</td>
+                        <td>{{ item.user.status }}</td>
+                        <td style="display:flex; gap:8px;">
+                            <a href="/admin/accounts/user/{{ item.user.id }}/change/" class="btn-dash btn-primary-dash" style="padding:6px 10px; font-size:.82rem;">تعديل</a>
+                            <form method="post" action="{% url 'accounts:admin_user_delete' item.user.id %}" onsubmit="return confirm('هل أنت متأكد من حذف هذا المستخدم؟');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-dash" style="padding:6px 10px; font-size:.82rem; background:#dc2626; color:#fff;">حذف</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="8" style="text-align:center;">لا توجد بيانات.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

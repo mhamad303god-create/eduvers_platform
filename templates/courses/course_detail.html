@@ -1,0 +1,536 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ course.title }} - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container course-page">
+    <section class="course-header">
+        <div class="course-thumbnail-large">
+            {% if course.thumbnail %}
+                <img src="{{ course.thumbnail.url }}" alt="{{ course.title }}">
+            {% else %}
+                <div class="thumbnail-placeholder-large">
+                    <i class="fas fa-graduation-cap"></i>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="course-info">
+            <h1 class="course-title">{{ course.title }}</h1>
+
+            <div class="course-meta">
+                <span class="meta-chip">{{ course.subject.subject_name }}</span>
+                <span class="meta-chip">{{ course.get_level_display }}</span>
+                <span class="meta-chip">{{ course.get_course_type_display }}</span>
+                <span class="meta-chip">{{ course.teacher.user.get_full_name|default:course.teacher.user.email }}</span>
+            </div>
+
+            <p class="course-description">{{ course.description }}</p>
+
+            <div class="course-details">
+                {% if course.price %}
+                    <div class="detail-item">
+                        <i class="fas fa-money-bill-wave"></i>
+                        <span>{{ course.price }} {{ course.currency }}</span>
+                    </div>
+                {% else %}
+                    <div class="detail-item">
+                        <i class="fas fa-gift"></i>
+                        <span>مجاني</span>
+                    </div>
+                {% endif %}
+
+                {% if course.duration_minutes %}
+                    <div class="detail-item">
+                        <i class="fas fa-clock"></i>
+                        <span>{{ course.duration_minutes }} دقيقة</span>
+                    </div>
+                {% endif %}
+
+                <div class="detail-item">
+                    <i class="fas fa-play-circle"></i>
+                    <span>{{ published_lessons_count }} درس منشور</span>
+                </div>
+
+                {% if draft_lessons_count %}
+                    <div class="detail-item draft-note">
+                        <i class="fas fa-hourglass-half"></i>
+                        <span>{{ draft_lessons_count }} مسودة</span>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="course-actions">
+                {% if can_edit %}
+                    <a href="{% url 'courses:course_edit' course.course_id %}" class="btn btn-outline-primary">
+                        <i class="fas fa-edit"></i> تعديل الكورس
+                    </a>
+                    <a href="{% url 'courses:lesson_create' course.course_id %}" class="btn btn-outline-success">
+                        <i class="fas fa-plus"></i> إضافة درس
+                    </a>
+                    {% if draft_lessons_count %}
+                        <form method="post" action="{% url 'courses:publish_all_lessons' course.course_id %}" class="publish-all-form">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-upload"></i> نشر كل المسودات
+                            </button>
+                        </form>
+                    {% endif %}
+                {% endif %}
+
+                {% if course.preview_video %}
+                    <a href="{% url 'courses:download_course_preview' course.course_id %}" class="btn btn-outline-primary">
+                        <i class="fas fa-download"></i> تنزيل الفيديو التعريفي
+                    </a>
+                {% endif %}
+
+                {% if downloadable_lessons_count %}
+                    <a href="{% url 'courses:download_course_lessons_bundle' course.course_id %}" class="btn btn-outline-success">
+                        <i class="fas fa-box-archive"></i> تنزيل كل الدروس
+                    </a>
+                {% endif %}
+
+                {% if 'student' in user_roles %}
+                    {% if is_enrolled %}
+                        <div class="enrollment-status">
+                            <span class="enrolled-badge"><i class="fas fa-check"></i> مسجل في الكورس</span>
+                            {% if enrollment.progress_percentage %}
+                                <div class="progress-info">التقدم: {{ enrollment.progress_percentage|floatformat:1 }}%</div>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <a href="{% if has_paid_price %}{% url 'payments:course_checkout' course.course_id %}{% else %}{% url 'courses:enroll_course' course.course_id %}{% endif %}" class="btn btn-primary btn-lg">
+                            <i class="fas fa-user-plus"></i>
+                            {% if has_paid_price %}التسجيل والدفع{% else %}التسجيل فقط{% endif %}
+                        </a>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
+    <section class="course-content-tabs">
+        <div class="tabs-nav">
+            <button class="tab-btn active" data-tab="overview">نظرة عامة</button>
+            <button class="tab-btn" data-tab="lessons">الدروس</button>
+            {% if course.requirements %}
+                <button class="tab-btn" data-tab="requirements">المتطلبات</button>
+            {% endif %}
+            {% if course.objectives %}
+                <button class="tab-btn" data-tab="objectives">الأهداف</button>
+            {% endif %}
+        </div>
+
+        <div class="tabs-content">
+            <div class="tab-pane active" id="overview">
+                {% if course.preview_video %}
+                    <div class="ambient-video-shell" id="ambientShell">
+                        <div class="ambient-video-head">
+                            <h3>الفيديو التعريفي</h3>
+                            <div class="ambient-head-chips">
+                                <span class="preview-chip"><i class="fas fa-sparkles"></i> ستايل مطابق للدروس</span>
+                                <span class="preview-chip subtle"><i class="fas fa-photo-film"></i> خلفية من الفيديو</span>
+                                <span class="preview-chip subtle"><i class="fas fa-circle-play"></i> تشغيل مباشر</span>
+                            </div>
+                        </div>
+                        <div class="ambient-video-card">
+                            <div class="ambient-video-toolbar">
+                                <button type="button" class="theme-toggle-btn active" data-preview-mode="cinematic">سينمائي</button>
+                                <button type="button" class="theme-toggle-btn" data-preview-mode="focus">تركيز</button>
+                                <button type="button" class="theme-toggle-btn" data-preview-mode="compact">مضغوط</button>
+                                <a href="{% url 'courses:download_course_preview' course.course_id %}" class="theme-toggle-btn" style="text-decoration:none;">
+                                    تنزيل الفيديو
+                                </a>
+                            </div>
+                            <video id="coursePreviewVideo" controls preload="metadata" playsinline>
+                                <source src="{{ course.preview_video.url }}" type="video/mp4">
+                                متصفحك لا يدعم تشغيل الفيديو.
+                            </video>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <div class="course-stats">
+                    <div class="stat-item"><i class="fas fa-play-circle"></i><span>{{ published_lessons_count }} درس</span></div>
+                    <div class="stat-item"><i class="fas fa-graduation-cap"></i><span>{{ course.get_level_display }}</span></div>
+                    <div class="stat-item"><i class="fas fa-calendar"></i><span>تم النشر {{ course.created_at|date:"M Y" }}</span></div>
+                </div>
+            </div>
+
+            <div class="tab-pane" id="lessons">
+                {% if draft_lessons_count and not can_edit %}
+                    <div class="notice-card">
+                        <i class="fas fa-hourglass-half"></i>
+                        <p>يوجد {{ draft_lessons_count }} درس بانتظار النشر من المعلم.</p>
+                    </div>
+                {% endif %}
+
+                <div class="lessons-grid">
+                    {% for lesson in lessons %}
+                        <article class="lesson-card" data-video-card>
+                            <div class="lesson-thumbnail-wrapper">
+                                {% if lesson.video %}
+                                    <video class="lesson-video-preview" preload="metadata" playsinline muted loop data-sample-frame="true" {% if lesson.poster_image %}poster="{{ lesson.poster_image.url }}"{% endif %} {% if lesson.poster_image %}data-poster-url="{{ lesson.poster_image.url }}"{% endif %}>
+                                        <source src="{{ lesson.video.url }}#t=8" type="video/mp4">
+                                    </video>
+                                {% else %}
+                                    <div class="video-preview-placeholder"><i class="fas fa-video-slash"></i></div>
+                                {% endif %}
+                                <div class="video-overlay-gradient"></div>
+                                <div class="lesson-sheen"></div>
+                                <div class="lesson-preview-info">
+                                    <span class="preview-chip"><i class="fas fa-bolt"></i> معاينة ذكية</span>
+                                    <span class="preview-chip subtle"><i class="fas fa-photo-film"></i> لقطة من الفيديو</span>
+                                </div>
+                                {% if lesson.video %}
+                                    <button type="button" class="lesson-audio-toggle" data-audio-toggle aria-label="تبديل الصوت">
+                                        <i class="fas fa-volume-xmark"></i>
+                                    </button>
+                                {% endif %}
+
+                                {% if lesson.duration_display %}
+                                    <span class="duration-badge">{{ lesson.duration_display }}</span>
+                                {% endif %}
+
+                                {% if is_enrolled and lesson.lesson_id in completed_lesson_ids %}
+                                    <span class="lesson-state-badge done"><i class="fas fa-check"></i> مكتمل</span>
+                                {% elif lesson.is_free %}
+                                    <span class="lesson-state-badge free"><i class="fas fa-unlock"></i> مجاني</span>
+                                {% endif %}
+
+                                <a href="{% url 'courses:lesson_view' course.course_id lesson.lesson_id %}?autoplay=1" class="play-overlay" aria-label="عرض الدرس">
+                                    <span class="play-button"><i class="fas fa-play"></i></span>
+                                </a>
+                            </div>
+
+                            <div class="lesson-card-content">
+                                <div class="lesson-header">
+                                    <h4 class="lesson-card-title">{{ lesson.title }}</h4>
+                                    {% if can_edit %}
+                                        <div class="lesson-actions">
+                                            <button class="action-btn-dots" type="button"><i class="fas fa-ellipsis-v"></i></button>
+                                            <div class="actions-menu">
+                                                <a href="{% url 'courses:lesson_edit' course.course_id lesson.lesson_id %}" class="action-item edit">
+                                                    <i class="fas fa-pen"></i> تعديل
+                                                </a>
+                                                <form method="post" action="{% url 'courses:lesson_delete' course.course_id lesson.lesson_id %}" onsubmit="return confirm('هل أنت متأكد من حذف هذا الدرس؟');">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="action-item delete"><i class="fas fa-trash"></i> حذف</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="lesson-meta-row">
+                                    <span>الدرس {{ lesson.order_index }}</span>
+                                    <span class="meta-dot">•</span>
+                                    <span>{{ course.teacher.user.first_name }} {{ course.teacher.user.last_name }}</span>
+                                </div>
+                                <p class="lesson-card-desc">{{ lesson.description|default:"بدون وصف"|truncatechars:90 }}</p>
+                                {% if lesson.video %}
+                                <div class="lesson-card-footer-actions">
+                                    <a href="{% url 'courses:download_lesson_video' course.course_id lesson.lesson_id %}" class="lesson-download-link">
+                                        <i class="fas fa-download"></i> تنزيل الدرس
+                                    </a>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </article>
+                    {% empty %}
+                        <div class="no-lessons">
+                            <i class="fas fa-film"></i>
+                            <p>لا توجد دروس منشورة في هذا الكورس حاليًا.</p>
+                            {% if can_edit %}
+                                <a href="{% url 'courses:lesson_create' course.course_id %}" class="btn btn-primary"><i class="fas fa-plus"></i> إضافة أول درس</a>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            {% if course.requirements %}
+                <div class="tab-pane" id="requirements">
+                    <div class="requirements-list">
+                        {% for requirement in course.requirements %}
+                            <div class="requirement-item"><i class="fas fa-check"></i><span>{{ requirement }}</span></div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+
+            {% if course.objectives %}
+                <div class="tab-pane" id="objectives">
+                    <div class="objectives-list">
+                        {% for objective in course.objectives %}
+                            <div class="objective-item"><i class="fas fa-bullseye"></i><span>{{ objective }}</span></div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+.course-page { padding-top: 24px; padding-bottom: 36px; }
+.course-header { display: grid; grid-template-columns: 320px 1fr; gap: 24px; padding: 24px; border-radius: 18px; background: linear-gradient(140deg, color-mix(in srgb, var(--card-color) 92%, #05080f), color-mix(in srgb, var(--card-color) 82%, #101a31)); border: 1px solid var(--border-color); box-shadow: var(--shadow); margin-bottom: 24px; }
+.course-thumbnail-large { width: 100%; border-radius: 14px; overflow: hidden; aspect-ratio: 16/10; background: #05070d; }
+.course-thumbnail-large img { width: 100%; height: 100%; object-fit: cover; }
+.thumbnail-placeholder-large { width: 100%; height: 100%; display: grid; place-items: center; font-size: 3rem; color: #89c5ff; background: radial-gradient(circle at 20% 20%, rgba(14,165,233,0.45), #071122 70%); }
+.course-title { margin: 0 0 10px; font-size: clamp(1.4rem, 2vw, 2rem); color: var(--text-color); }
+.course-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.meta-chip { font-size: 0.82rem; border: 1px solid var(--border-color); background: color-mix(in srgb, var(--card-color) 84%, #02060f); color: var(--text-secondary); border-radius: 999px; padding: 6px 10px; }
+.course-description { color: var(--text-color); line-height: 1.75; margin-bottom: 14px; }
+.course-details { display: flex; flex-wrap: wrap; gap: 12px 18px; margin-bottom: 16px; }
+.detail-item { display: inline-flex; align-items: center; gap: 7px; color: var(--text-secondary); }
+.detail-item i { color: #7cd9ff; }
+.draft-note i { color: #f59e0b; }
+.course-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.publish-all-form { margin: 0; }
+.enrollment-status { display: flex; gap: 8px; flex-direction: column; }
+.enrolled-badge { background: linear-gradient(90deg, #059669, #10b981); color: #fff; padding: 7px 12px; border-radius: 999px; font-weight: 700; display: inline-flex; gap: 6px; align-items: center; }
+.progress-info { color: var(--text-secondary); font-size: 0.92rem; }
+.theme-toggle-btn { border:1px solid rgba(148,163,184,.18); background:rgba(15,23,42,.72); color:#cbd5e1; padding:8px 12px; border-radius:999px; cursor:pointer; font-weight:700; }
+.theme-toggle-btn.active { color:#fff; border-color: rgba(125,211,252,.55); box-shadow: 0 0 0 1px rgba(125,211,252,.18); }
+.tabs-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color); }
+.tab-btn { border: 1px solid var(--border-color); background: color-mix(in srgb, var(--card-color) 85%, #02060f); color: var(--text-secondary); padding: 9px 15px; border-radius: 12px; font-weight: 700; cursor: pointer; transition: all 0.25s ease; }
+.tab-btn.active, .tab-btn:hover { color: #fff; border-color: rgba(125, 211, 252, 0.65); box-shadow: 0 0 0 1px rgba(125, 211, 252, 0.22); }
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
+.ambient-video-shell { --ambient-hue: 190; margin-bottom: 20px; }
+.ambient-video-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; color: var(--text-secondary); font-size: 0.9rem; }
+.ambient-video-head h3 { margin: 0; font-size: 1.1rem; color: var(--text-color); }
+.ambient-head-chips { display:flex; gap:8px; flex-wrap:wrap; }
+.ambient-video-card { position: relative; border-radius: 22px; overflow: hidden; background: #000; padding: 10px; border: 1px solid rgba(125, 211, 252, 0.25); box-shadow: 0 26px 54px -34px rgba(2,6,23,.95), 0 0 0 1px rgba(255,255,255,.04) inset; }
+.ambient-video-card::before { content: ""; position: absolute; inset: -20%; background: radial-gradient(circle at 20% 20%, hsla(var(--ambient-hue), 95%, 60%, 0.30), transparent 45%), radial-gradient(circle at 80% 70%, hsla(calc(var(--ambient-hue) + 70), 90%, 58%, 0.24), transparent 40%); filter: blur(26px); transform: translateZ(0); animation: ambientPulse 9s linear infinite; pointer-events: none; }
+.ambient-video-toolbar { position:relative; z-index:2; display:flex; justify-content:flex-end; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+.ambient-video-card video { width: 100%; display: block; aspect-ratio: 16/9; object-fit: contain; border-radius: 16px; background: #000; position: relative; z-index: 1; box-shadow: 0 18px 38px rgba(2,6,23,.42); }
+.ambient-video-shell.mode-focus .ambient-video-card::before { opacity:.48; filter: blur(20px); }
+.ambient-video-shell.mode-compact .ambient-video-card { padding: 8px; border-radius: 18px; }
+@keyframes ambientPulse { 0% { transform: scale(1); opacity: 0.6; } 50% { transform: scale(1.08); opacity: 1; } 100% { transform: scale(1); opacity: 0.6; } }
+.course-stats { display: flex; gap: 16px; flex-wrap: wrap; }
+.stat-item { border-radius: 999px; border: 1px solid var(--border-color); background: color-mix(in srgb, var(--card-color) 86%, #000); padding: 8px 12px; color: var(--text-secondary); display: inline-flex; gap: 8px; align-items: center; }
+.stat-item i { color: #7dd3fc; }
+.notice-card { display: flex; align-items: center; gap: 10px; border: 1px dashed rgba(245, 158, 11, 0.7); color: #fbbf24; background: rgba(245, 158, 11, 0.08); border-radius: 12px; padding: 11px 13px; margin-bottom: 14px; }
+.lessons-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+.lesson-card { position: relative; border-radius: 20px; overflow: hidden; border: 1px solid rgba(148, 163, 184, 0.24); background:
+linear-gradient(165deg, rgba(8, 16, 31, 0.96), rgba(16, 24, 44, 0.98)),
+var(--frame-art, radial-gradient(circle at 30% 25%, rgba(56, 189, 248, 0.18), transparent 42%));
+box-shadow: 0 18px 38px -22px rgba(8, 36, 72, 0.95), 0 0 0 1px rgba(255,255,255,0.02) inset;
+transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease, background-size 0.3s ease; }
+.lesson-card::before { content:""; position:absolute; inset:-35% -10% auto; height:120px; background: radial-gradient(circle at 50% 50%, rgba(125,211,252,0.22), transparent 60%); filter: blur(22px); opacity:.7; pointer-events:none; }
+.lesson-card:hover { transform: translateY(-6px) scale(1.01); border-color: rgba(125, 211, 252, 0.58); box-shadow: 0 24px 48px -24px rgba(14, 165, 233, 0.58), 0 0 28px rgba(59,130,246,0.14); }
+.lesson-card.locked { opacity: 0.84; }
+.lesson-thumbnail-wrapper { position: relative; aspect-ratio: 16/9; background:
+linear-gradient(180deg, rgba(2,6,23,.10), rgba(2,6,23,.22)),
+var(--frame-art, #000) center/cover no-repeat;
+overflow: hidden; isolation: isolate; }
+.lesson-thumbnail-wrapper::before { content:""; position:absolute; inset:0; background: var(--frame-art); background-size: cover; background-position: center; filter: blur(16px) saturate(1.25); transform: scale(1.12); opacity:.55; }
+.lesson-thumbnail-wrapper::after { content:""; position:absolute; inset:0; background: linear-gradient(180deg, rgba(2,6,23,.03), rgba(2,6,23,.32)); pointer-events:none; }
+.lesson-video-preview { width: 100%; height: 100%; object-fit: cover; filter: saturate(1.16) contrast(1.08) brightness(1.02); position:relative; z-index:1; transition: transform .4s ease, filter .3s ease, opacity .25s ease; opacity:.96; }
+.lesson-card:hover .lesson-video-preview { transform: scale(1.05); filter: saturate(1.18) contrast(1.1) brightness(1.02); }
+.video-preview-placeholder { width: 100%; height: 100%; display: grid; place-items: center; color: #506389; font-size: 2.3rem; background: radial-gradient(circle at 35% 20%, rgba(56, 189, 248, 0.25), #060b16 70%); position:relative; z-index:1; }
+.video-overlay-gradient { position: absolute; inset: 0; background: linear-gradient(to top, rgba(3, 6, 12, 0.58), rgba(5, 8, 16, 0.08) 46%, rgba(5,8,16,.02)); pointer-events: none; z-index:2; }
+.lesson-sheen { position:absolute; inset:0; z-index:2; background: linear-gradient(115deg, transparent 10%, rgba(255,255,255,.10) 30%, transparent 52%); transform: translateX(-120%); transition: transform .65s ease; pointer-events:none; }
+.lesson-card:hover .lesson-sheen { transform: translateX(120%); }
+.lesson-preview-info { position:absolute; top:10px; left:10px; z-index:3; display:flex; gap:8px; flex-wrap:wrap; }
+.preview-chip { display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px; background:rgba(2,6,23,.72); color:#e0f2fe; font-size:.72rem; border:1px solid rgba(125,211,252,.24); backdrop-filter: blur(8px); }
+.preview-chip.subtle { color:#cbd5e1; }
+.lesson-audio-toggle { position:absolute; left:10px; bottom:10px; z-index:3; width:38px; height:38px; border:none; border-radius:50%; display:grid; place-items:center; color:#fff; background:rgba(2,6,23,.82); border:1px solid rgba(148,163,184,.24); cursor:pointer; backdrop-filter: blur(8px); }
+.duration-badge, .lesson-state-badge { position: absolute; z-index: 3; border-radius: 999px; font-size: 0.74rem; font-weight: 700; padding: 4px 8px; }
+.duration-badge { bottom: 8px; left: 56px; background: rgba(2, 6, 23, 0.85); color: #e2e8f0; border: 1px solid rgba(148, 163, 184, 0.24); }
+.lesson-state-badge { top: 8px; right: 8px; color: #fff; }
+.lesson-state-badge.done { background: rgba(16, 185, 129, 0.92); }
+.lesson-state-badge.free { background: rgba(14, 165, 233, 0.95); }
+.lesson-state-badge.lock { background: rgba(239, 68, 68, 0.95); }
+.play-overlay { position: absolute; inset: 0; z-index: 3; display: grid; place-items: center; background: transparent; text-decoration: none; transition: background 0.22s ease; }
+.play-button { width: 58px; height: 58px; border-radius: 50%; display: grid; place-items: center; color: #fff; background: linear-gradient(135deg, rgba(14,165,233,.92), rgba(59,130,246,.92)); border: 1px solid rgba(191,219,254,0.9); box-shadow: 0 0 0 12px rgba(14, 165, 233, 0.12), 0 18px 34px rgba(2,6,23,.35); opacity: .94; transform: scale(1); transition: all 0.22s ease; }
+.play-overlay { background: rgba(2, 6, 23, 0.06); }
+.lesson-card:hover .play-overlay { background: rgba(2, 6, 23, 0.10); }
+.lesson-card:hover .play-button { opacity: 1; transform: scale(1.04); }
+.lesson-card-content { padding: 13px 13px 14px; }
+.lesson-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+.lesson-card-title { color: #f1f5f9; margin: 0; line-height: 1.45; font-size: 1rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.lesson-meta-row { display: flex; align-items: center; gap: 7px; color: #8fa4bf; font-size: 0.83rem; margin-bottom: 6px; }
+.meta-dot { font-size: 0.45rem; }
+.lesson-card-desc { margin: 0; color: #a9b8cb; font-size: 0.87rem; line-height: 1.6; min-height: 44px; }
+.lesson-card-footer-actions { margin-top: 12px; display: flex; justify-content: flex-start; }
+.lesson-download-link { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; text-decoration: none; background: rgba(59,130,246,.12); border: 1px solid rgba(59,130,246,.18); color: #dbeafe; font-weight: 800; }
+.lesson-download-link:hover { color: #fff; border-color: rgba(125,211,252,.4); }
+.lesson-actions { position: relative; }
+.action-btn-dots { color: #9db2c9; background: transparent; border: none; cursor: pointer; }
+.actions-menu { position: absolute; top: 100%; left: 0; display: none; min-width: 120px; border-radius: 10px; padding: 6px; border: 1px solid rgba(148, 163, 184, 0.2); background: #0f172a; box-shadow: 0 16px 28px rgba(2, 6, 23, 0.45); z-index: 7; }
+.lesson-actions:hover .actions-menu { display: block; }
+.action-item { width: 100%; display: flex; align-items: center; gap: 8px; border: none; color: #e2e8f0; background: transparent; text-decoration: none; cursor: pointer; padding: 7px 9px; border-radius: 8px; text-align: right; font-size: 0.88rem; }
+.action-item:hover { background: rgba(148, 163, 184, 0.14); }
+.action-item.delete:hover { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+.no-lessons { text-align: center; border: 1px dashed var(--border-color); background: color-mix(in srgb, var(--card-color) 90%, #05080f); border-radius: 16px; padding: 28px; color: var(--text-secondary); }
+.no-lessons i { font-size: 2.2rem; margin-bottom: 10px; color: #7dd3fc; }
+.requirements-list, .objectives-list { display: grid; gap: 10px; }
+.requirement-item, .objective-item { display: flex; align-items: flex-start; gap: 11px; border: 1px solid var(--border-color); background: color-mix(in srgb, var(--card-color) 90%, #05080f); border-radius: 12px; padding: 11px 13px; color: var(--text-color); }
+.requirement-item i, .objective-item i { margin-top: 3px; color: #7dd3fc; }
+@media (max-width: 960px) { .course-header { grid-template-columns: 1fr; } }
+@media (max-width: 640px) { .course-header { padding: 16px; } .tabs-nav { gap: 6px; } .tab-btn { flex: 1 1 auto; text-align: center; } .course-actions .btn { width: 100%; justify-content: center; } }
+@media (prefers-reduced-motion: reduce) {
+    .ambient-video-card::before, .lesson-card, .play-button { animation: none; transition: none; }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabPanes = document.querySelectorAll('.tab-pane');
+
+    tabBtns.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const tabId = this.getAttribute('data-tab');
+            tabBtns.forEach(function(b) { b.classList.remove('active'); });
+            tabPanes.forEach(function(p) { p.classList.remove('active'); });
+            this.classList.add('active');
+            const target = document.getElementById(tabId);
+            if (target) target.classList.add('active');
+        });
+    });
+
+    const previewVideo = document.getElementById('coursePreviewVideo');
+    const ambientShell = document.getElementById('ambientShell');
+    if (previewVideo && ambientShell) {
+        const updateHue = function() {
+            const hue = 180 + Math.round(Math.sin(previewVideo.currentTime * 0.65) * 55);
+            ambientShell.style.setProperty('--ambient-hue', String(hue));
+        };
+        const sampleFrame = function() {
+            if (!previewVideo.duration || !isFinite(previewVideo.duration)) return;
+            const sampleAt = Math.min(10, Math.max(1, previewVideo.duration * 0.35));
+            const onSeeked = function() {
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = previewVideo.videoWidth || 640;
+                    canvas.height = previewVideo.videoHeight || 360;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(previewVideo, 0, 0, canvas.width, canvas.height);
+                    const frameUrl = canvas.toDataURL('image/jpeg', 0.72);
+                    ambientShell.querySelector('.ambient-video-card').style.backgroundImage =
+                        `linear-gradient(180deg, rgba(2,6,23,.14), rgba(2,6,23,.1)), url("${frameUrl}")`;
+                    ambientShell.querySelector('.ambient-video-card').style.backgroundSize = 'cover';
+                    ambientShell.querySelector('.ambient-video-card').style.backgroundPosition = 'center';
+                } catch (error) {
+                    console.warn('course preview frame extraction failed', error);
+                }
+                previewVideo.currentTime = 0;
+            };
+            previewVideo.addEventListener('seeked', onSeeked, { once: true });
+            previewVideo.currentTime = sampleAt;
+        };
+        previewVideo.addEventListener('loadedmetadata', sampleFrame, { once: true });
+        previewVideo.addEventListener('timeupdate', updateHue);
+        previewVideo.addEventListener('playing', updateHue);
+    }
+
+    const previewModeButtons = document.querySelectorAll('[data-preview-mode]');
+    previewModeButtons.forEach(function(button) {
+        button.addEventListener('click', function() {
+            previewModeButtons.forEach(function(item) { item.classList.remove('active'); });
+            button.classList.add('active');
+            if (ambientShell) {
+                ambientShell.className = `ambient-video-shell mode-${button.dataset.previewMode}`;
+            }
+        });
+    });
+
+    const sampledVideos = document.querySelectorAll('video[data-sample-frame="true"]');
+    sampledVideos.forEach(function(video) {
+        const card = video.closest('[data-video-card]');
+        const wrapper = video.closest('.lesson-thumbnail-wrapper');
+        if (!card || !wrapper) return;
+
+        let hoverStarted = false;
+
+        const posterUrl = video.dataset.posterUrl;
+
+        if (posterUrl) {
+            wrapper.style.setProperty('--frame-art', `url("${posterUrl}")`);
+            card.style.setProperty('--frame-art', `url("${posterUrl}")`);
+        }
+
+        const setFrameArt = function() {
+            try {
+                const canvas = document.createElement('canvas');
+                const width = video.videoWidth || 480;
+                const height = video.videoHeight || 270;
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, width, height);
+                const frameUrl = canvas.toDataURL('image/jpeg', 0.72);
+                wrapper.style.setProperty('--frame-art', `url("${frameUrl}")`);
+                card.style.setProperty('--frame-art', `url("${frameUrl}")`);
+            } catch (error) {
+                console.warn('frame extraction failed', error);
+            }
+        };
+
+        const sampleFrame = function() {
+            if (!video.duration || !isFinite(video.duration)) return;
+            const sampleAt = Math.min(10, Math.max(1, video.duration * 0.35));
+            const onSeeked = function() {
+                setFrameArt();
+            };
+            video.addEventListener('seeked', onSeeked, { once: true });
+            video.currentTime = sampleAt;
+        };
+
+        if (!posterUrl) {
+            video.addEventListener('loadedmetadata', sampleFrame, { once: true });
+        }
+
+        const startHoverPreview = function() {
+            if (hoverStarted) return;
+            hoverStarted = true;
+            if (video.currentTime <= 0 || !isFinite(video.currentTime)) {
+                video.currentTime = 0;
+            }
+            const playPromise = video.play();
+            if (playPromise && typeof playPromise.catch === 'function') {
+                playPromise.catch(function() {
+                    hoverStarted = false;
+                });
+            }
+        };
+
+        const stopHoverPreview = function() {
+            video.pause();
+            video.muted = true;
+            const audioToggle = card.querySelector('[data-audio-toggle]');
+            if (audioToggle) {
+                audioToggle.innerHTML = '<i class="fas fa-volume-xmark"></i>';
+            }
+            hoverStarted = false;
+        };
+
+        card.addEventListener('mouseenter', startHoverPreview);
+        card.addEventListener('mouseleave', stopHoverPreview);
+        card.addEventListener('focusin', startHoverPreview);
+        card.addEventListener('focusout', stopHoverPreview);
+
+        const audioToggle = card.querySelector('[data-audio-toggle]');
+        if (audioToggle) {
+            audioToggle.addEventListener('click', function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                video.muted = !video.muted;
+                audioToggle.innerHTML = video.muted ? '<i class="fas fa-volume-xmark"></i>' : '<i class="fas fa-volume-high"></i>';
+                if (!hoverStarted) {
+                    startHoverPreview();
+                }
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

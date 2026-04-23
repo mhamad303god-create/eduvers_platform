@@ -1,0 +1,173 @@
+{% extends 'layouts/dashboard_base.html' %}
+
+{% block title %}حل التقييم - EduVerse{% endblock %}
+
+{% block dashboard_content %}
+<section class="dashboard-section">
+    <div class="section-header">
+        <div class="section-title"><i class="fas fa-stopwatch"></i> {{ assessment.title }}</div>
+        <div class="timer-chip pulse-soft" id="timerChip">
+            <i class="fas fa-clock"></i>
+            <span id="timerText">--:--</span>
+        </div>
+    </div>
+
+    <div class="time-progress-wrap">
+        <div class="time-progress-bar" id="timeProgressBar"></div>
+    </div>
+
+    <form method="post" id="assessmentForm">
+        {% csrf_token %}
+        <div class="question-stack">
+            {% for answer in answers %}
+                <article class="question-card" data-question-id="{{ answer.question.question_id }}">
+                    <div class="q-head">
+                        <span class="q-num">سؤال {{ forloop.counter }}</span>
+                        <span class="q-points">{{ answer.question.points }} نقطة</span>
+                    </div>
+                    <h4>{{ answer.question.question_text }}</h4>
+
+                    {% if answer.question.question_type == 'multiple_choice' or answer.question.question_type == 'true_false' %}
+                        <div class="options">
+                            {% for choice in answer.question.questionchoice_set.all %}
+                                <label class="option-row">
+                                    <input
+                                        type="radio"
+                                        name="question_{{ answer.question.question_id }}"
+                                        value="{{ choice.choice_id }}"
+                                        {% if answer.selected_choice and answer.selected_choice.choice_id == choice.choice_id %}checked{% endif %}
+                                    >
+                                    <span>{{ choice.choice_text }}</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <textarea
+                            name="question_{{ answer.question.question_id }}"
+                            rows="4"
+                            class="answer-box"
+                            placeholder="اكتب إجابتك هنا..."
+                        >{{ answer.text_answer|default:"" }}</textarea>
+                    {% endif %}
+                </article>
+            {% endfor %}
+        </div>
+
+        <div class="submit-bar">
+            <button type="submit" class="btn-dash btn-primary-dash">
+                <i class="fas fa-paper-plane"></i> إرسال التقييم
+            </button>
+        </div>
+    </form>
+</section>
+
+<style>
+.timer-chip { background: rgba(14,165,233,.16); color:#7dd3fc; border:1px solid rgba(14,165,233,.42); border-radius:999px; padding:7px 12px; display:inline-flex; gap:7px; align-items:center; font-weight:700; min-width:110px; justify-content:center; }
+.time-progress-wrap {
+    width: 100%;
+    height: 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(125, 211, 252, 0.3);
+    background: rgba(15, 23, 42, 0.8);
+    margin: 0 0 14px 0;
+    overflow: hidden;
+}
+.time-progress-bar {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, #22c55e, #16a34a);
+    transition: width 1s linear, background .35s ease;
+}
+.question-stack { display:grid; gap:12px; }
+.question-card { border:1px solid var(--dash-border); border-radius:12px; background:linear-gradient(165deg, rgba(19,35,61,.96), rgba(9,20,36,.96)); padding:14px; }
+.q-head { display:flex; justify-content:space-between; margin-bottom:8px; color:#c7d7ea; }
+.q-num { background: rgba(14,165,233,.17); border:1px solid rgba(14,165,233,.42); color:#7dd3fc; border-radius:999px; padding:3px 9px; font-size:.8rem; }
+.q-points { color:#fbbf24; font-size:.82rem; font-weight:700; }
+.question-card h4 { margin:0 0 10px; color:#fff; line-height:1.6; }
+.options { display:grid; gap:8px; }
+.option-row { border:1px solid rgba(100,116,139,.52); border-radius:10px; padding:8px 10px; color:#d6e3f4; display:flex; gap:8px; align-items:flex-start; cursor:pointer; }
+.option-row:hover { border-color:rgba(125,211,252,.68); background:rgba(14,165,233,.08); }
+.answer-box { width:100%; background:#0a1324; color:#fff; border:1px solid rgba(100,116,139,.68); border-radius:10px; padding:10px; }
+.answer-box:focus { outline:none; border-color:#38bdf8; box-shadow:0 0 0 4px rgba(56,189,248,.14); }
+.submit-bar { margin-top:14px; display:flex; justify-content:flex-end; }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const remaining = {{ remaining_seconds|default:"null" }};
+    const timerText = document.getElementById('timerText');
+    const timerChip = document.getElementById('timerChip');
+    const timeProgressBar = document.getElementById('timeProgressBar');
+    const form = document.getElementById('assessmentForm');
+    let warned = false;
+
+    const format = (n) => String(n).padStart(2, '0');
+    if (remaining === null) {
+        timerText.textContent = 'بدون حد';
+        return;
+    }
+
+    const total = parseInt(remaining, 10);
+    let left = parseInt(remaining, 10);
+    const tick = () => {
+        if (left <= 0) {
+            timerText.textContent = '00:00';
+            timerChip.style.borderColor = 'rgba(239,68,68,.7)';
+            if (typeof Toastify !== 'undefined') {
+                Toastify({
+                    text: 'انتهى زمن الاختبار. سيتم الإرسال الآن.',
+                    duration: 3200,
+                    gravity: 'top',
+                    position: 'left',
+                    close: true,
+                    style: {
+                        background: 'linear-gradient(120deg, #dc2626, #f97316)',
+                        borderRadius: '12px'
+                    }
+                }).showToast();
+            } else {
+                alert('انتهى زمن الاختبار. سيتم الإرسال الآن.');
+            }
+            setTimeout(() => form.submit(), 400);
+            return;
+        }
+
+        const percent = Math.max(0, Math.min(100, (left / total) * 100));
+        timeProgressBar.style.width = `${percent}%`;
+        if (percent > 50) {
+            timeProgressBar.style.background = 'linear-gradient(90deg, #22c55e, #16a34a)';
+        } else if (percent > 20) {
+            timeProgressBar.style.background = 'linear-gradient(90deg, #f59e0b, #f97316)';
+        } else {
+            timeProgressBar.style.background = 'linear-gradient(90deg, #ef4444, #dc2626)';
+        }
+
+        if (left <= 60 && !warned) {
+            warned = true;
+            if (typeof Toastify !== 'undefined') {
+                Toastify({
+                    text: 'تبقى أقل من دقيقة على انتهاء الاختبار.',
+                    duration: 2500,
+                    gravity: 'top',
+                    position: 'left',
+                    close: true,
+                    style: {
+                        background: 'linear-gradient(120deg, #d97706, #f59e0b)',
+                        borderRadius: '12px'
+                    }
+                }).showToast();
+            }
+            timerChip.style.borderColor = 'rgba(239,68,68,.7)';
+            timerChip.style.color = '#fca5a5';
+        }
+
+        const m = Math.floor(left / 60);
+        const s = left % 60;
+        timerText.textContent = `${format(m)}:${format(s)}`;
+        left -= 1;
+    };
+    tick();
+    setInterval(tick, 1000);
+});
+</script>
+{% endblock %}

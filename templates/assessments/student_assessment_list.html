@@ -1,0 +1,85 @@
+{% extends 'layouts/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}التقييمات والاختبارات - EduVerse{% endblock %}
+
+{% block dashboard_content %}
+<section class="dashboard-section">
+    <div class="section-header">
+        <div class="section-title">
+            <i class="fas fa-clipboard-check"></i>
+            التقييمات والاختبارات المتاحة
+        </div>
+    </div>
+
+    {% if assessments %}
+        <div class="assessment-grid">
+            {% for assessment in assessments %}
+                <article class="assessment-card">
+                    <div class="assessment-top">
+                        <span class="type-pill">{{ assessment.get_type_display }}</span>
+                        <span class="points-pill"><i class="fas fa-star"></i> {{ assessment.total_points }} نقطة</span>
+                    </div>
+                    <h3>{{ assessment.title }}</h3>
+                    <p>{{ assessment.description|default:"بدون وصف"|truncatechars:120 }}</p>
+
+                    <div class="meta">
+                        <div><i class="fas fa-book"></i> {{ assessment.subject.subject_name|default:"عام" }}</div>
+                        <div><i class="fas fa-layer-group"></i> {{ assessment.question_count }} سؤال</div>
+                        <div><i class="fas fa-clock"></i> {{ assessment.duration_minutes|default:"--" }} دقيقة</div>
+                        <div><i class="fas fa-user-tie"></i> {{ assessment.teacher.user.get_full_name|default:"-" }}</div>
+                    </div>
+
+                    <div class="score-strip">
+                        {% if assessment.best_score %}
+                            أفضل نتيجة: {{ assessment.best_score|floatformat:1 }}%
+                        {% else %}
+                            لم تُسجّل نتيجة بعد
+                        {% endif %}
+                        <span>محاولات مكتملة: {{ assessment.attempts_done }}</span>
+                    </div>
+
+                    <a href="{% url 'assessments:assessment_detail' assessment.assessment_id %}" class="btn-dash btn-primary-dash start-btn">
+                        <i class="fas fa-pen-alt"></i> عرض التقييم
+                    </a>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <i class="fas fa-clipboard-list"></i>
+            <h3>لا توجد تقييمات متاحة حالياً</h3>
+            <p>عد لاحقًا للتحقق من الاختبارات الجديدة.</p>
+        </div>
+    {% endif %}
+</section>
+
+<style>
+.assessment-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 18px; }
+.assessment-card {
+    border-radius: 14px;
+    border: 1px solid var(--dash-border);
+    background: linear-gradient(165deg, rgba(19,35,61,0.96), rgba(9,20,36,0.96));
+    padding: 18px;
+    box-shadow: var(--dash-shadow);
+    transition: transform .2s ease, border-color .2s ease;
+}
+.assessment-card:hover { transform: translateY(-4px); border-color: rgba(125,211,252,.7); }
+.assessment-top { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.type-pill, .points-pill { border-radius: 999px; padding: 5px 10px; font-size: .78rem; font-weight: 700; }
+.type-pill { background: rgba(14,165,233,.16); color: #7dd3fc; border: 1px solid rgba(14,165,233,.4); }
+.points-pill { background: rgba(245,158,11,.15); color: #fbbf24; border: 1px solid rgba(245,158,11,.4); }
+.assessment-card h3 { margin: 0 0 8px; color: #fff; font-size: 1.18rem; }
+.assessment-card p { margin: 0 0 12px; color: var(--dash-text-muted); min-height: 46px; }
+.meta { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; color: #b3c4d9; font-size: .86rem; margin-bottom: 12px; }
+.meta div { display: inline-flex; gap: 6px; align-items: center; }
+.score-strip {
+    display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+    background: rgba(15,23,42,.65); border: 1px solid rgba(148,163,184,.25); border-radius: 10px;
+    padding: 8px 10px; color: #cfe3f7; font-size: .84rem; margin-bottom: 12px;
+}
+.start-btn { width: 100%; justify-content: center; }
+.empty-state { text-align: center; padding: 56px 20px; color: var(--dash-text-muted); }
+.empty-state i { font-size: 3.4rem; margin-bottom: 10px; color: #7dd3fc; opacity: .75; }
+</style>
+{% endblock %}

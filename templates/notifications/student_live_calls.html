@@ -1,0 +1,248 @@
+{% extends 'layouts/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}الاتصال المباشر - الطالب{% endblock %}
+
+{% block extra_head %}
+<style>
+.call-grid { display:grid; grid-template-columns: minmax(340px, 390px) 1fr; gap:24px; }
+.call-panel { background: linear-gradient(180deg, rgba(15,23,42,.86), rgba(15,23,42,.72)); border:1px solid var(--dash-border); border-radius:26px; padding:24px; box-shadow: 0 24px 48px rgba(2,6,23,.24); }
+.call-panel h3 { margin:0 0 8px; font-size:1.3rem; }
+.call-panel p { margin:0 0 18px; color:var(--dash-text-muted); line-height:1.8; }
+.field-stack { display:grid; gap:10px; margin-bottom:18px; }
+.field-stack label { font-weight:800; color:var(--dash-text); }
+.call-input, .call-textarea, .call-select { width:100%; background:rgba(15,23,42,.82); color:#e5eefb; border:1px solid rgba(96,165,250,.24); border-radius:18px; padding:15px 16px; outline:none; }
+.call-input:focus, .call-textarea:focus, .call-select:focus { border-color:rgba(96,165,250,.65); box-shadow:0 0 0 4px rgba(59,130,246,.14); }
+.call-textarea { min-height:138px; resize:vertical; }
+.call-card { padding:20px; border-radius:22px; border:1px solid var(--dash-border); background: linear-gradient(180deg, rgba(15,23,42,.46), rgba(15,23,42,.26)); box-shadow:0 20px 40px rgba(2,6,23,.18); }
+.call-card.incoming { background: linear-gradient(180deg, rgba(59,130,246,.12), rgba(15,23,42,.34)); border-color: rgba(59,130,246,.22); }
+.status-pill { display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:999px; background:rgba(14,165,233,.12); color:#dbeafe; font-weight:800; border:1px solid rgba(14,165,233,.18); }
+.call-live-note { margin-top:10px; padding:12px 14px; border-radius:16px; background:rgba(59,130,246,.08); border:1px solid rgba(59,130,246,.14); color:#dbeafe; line-height:1.8; }
+.call-person { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+.call-person-avatar { width:52px; height:52px; border-radius:50%; overflow:hidden; border:2px solid rgba(96,165,250,.18); background:linear-gradient(135deg, rgba(59,130,246,.85), rgba(139,92,246,.85)); color:#fff; font-weight:900; display:grid; place-items:center; flex-shrink:0; }
+.call-person-avatar img { width:100%; height:100%; object-fit:cover; }
+@media (max-width: 900px) { .call-grid { grid-template-columns:1fr; } }
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<section class="dashboard-section">
+    <div class="section-header">
+        <div class="section-title"><i class="fas fa-phone-alt"></i> الاتصال المباشر</div>
+    </div>
+
+    <div class="call-grid">
+        <div class="call-panel">
+            <h3>طلب اتصال من أستاذ واحد فقط</h3>
+            <p>يمكنك اختيار أستاذ واحد فقط لكل اتصال مباشر. سيصل إليه الطلب كاتصال طارئ داخل المنصة مع خيار قبول أو رفض.</p>
+            <form method="post">
+                {% csrf_token %}
+                <div class="field-stack">
+                    <label>اختر الأستاذ</label>
+                    <select name="teacher_id" class="call-select" required>
+                        <option value="">اختر الأستاذ</option>
+                        {% for teacher in candidate_teachers %}
+                        <option value="{{ teacher.user_id }}">{{ teacher.user.get_full_name|default:teacher.user.email }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="field-stack">
+                    <label>الموضوع</label>
+                    <input type="text" name="topic" class="call-input" placeholder="مثال: أحتاج مساعدة الآن">
+                </div>
+                <div class="field-stack">
+                    <label>رسالة الاتصال</label>
+                    <textarea name="message" class="call-textarea" rows="4" placeholder="صف سبب الاتصال المباشر"></textarea>
+                </div>
+                <button type="submit" class="btn-dash btn-primary-dash" style="margin-top:16px; width:100%;">
+                    <i class="fas fa-phone-volume"></i> إرسال طلب الاتصال
+                </button>
+            </form>
+        </div>
+
+        <div style="display:grid; gap:18px;">
+            <section class="dashboard-section" style="margin:0;">
+                <div class="section-header"><div class="section-title"><i class="fas fa-bell"></i> اتصالات واردة</div></div>
+                <div style="display:grid; gap:14px;">
+                    {% for invite in incoming_calls %}
+                    <div class="call-card incoming" data-incoming-call-card data-call-id="{{ invite.live_call.call_id }}">
+                        <div style="display:flex; justify-content:space-between; gap:12px; margin-bottom:8px;">
+                            <div style="font-weight:700;">{{ invite.live_call.topic|default:"اتصال مباشر" }}</div>
+                            <div class="status-pill">وارد الآن</div>
+                        </div>
+                        <div class="call-person">
+                            <div class="call-person-avatar">
+                                {% if invite.live_call.initiated_by.avatar %}
+                                <img src="{{ invite.live_call.initiated_by.avatar.url }}" alt="{{ invite.live_call.initiated_by.get_full_name|default:invite.live_call.initiated_by.email }}">
+                                {% else %}
+                                <span>{{ invite.live_call.initiated_by.get_full_name|default:invite.live_call.initiated_by.email|first|upper }}</span>
+                                {% endif %}
+                            </div>
+                            <div>من: {{ invite.live_call.initiated_by.get_full_name|default:invite.live_call.initiated_by.email }}</div>
+                        </div>
+                        <div style="margin-bottom:10px; color: var(--dash-text-muted);">{{ invite.live_call.message }}</div>
+                        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                            <form method="post" action="{% url 'notifications:respond_live_call' invite.live_call.call_id 'accept' %}" data-call-action-form data-call-action="accept">{% csrf_token %}<button type="submit" class="btn-dash btn-primary-dash">قبول</button></form>
+                            <form method="post" action="{% url 'notifications:respond_live_call' invite.live_call.call_id 'reject' %}" data-call-action-form data-call-action="reject">{% csrf_token %}<button type="submit" class="btn-dash btn-outline-dash">رفض</button></form>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div style="color: var(--dash-text-muted);">لا يوجد اتصال وارد حالياً.</div>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <section class="dashboard-section" style="margin:0;">
+                <div class="section-header"><div class="section-title"><i class="fas fa-history"></i> طلباتي السابقة</div></div>
+                <div style="display:grid; gap:14px;">
+                    {% for call in outgoing_calls %}
+                    <div class="call-card" data-outgoing-call data-call-id="{{ call.call_id }}" data-room-url="{% url 'notifications:live_call_room' call.call_id %}" data-status-url="{% url 'notifications:live_call_status' call.call_id %}">
+                        <div style="display:flex; justify-content:space-between; gap:12px; margin-bottom:6px;">
+                            <div style="font-weight:700;">{{ call.topic|default:"اتصال مباشر" }}</div>
+                            <div class="status-pill" data-call-status>{{ call.get_status_display }}</div>
+                        </div>
+                        <div class="call-person">
+                            <div class="call-person-avatar">
+                                {% if call.teacher.avatar %}
+                                <img src="{{ call.teacher.avatar.url }}" alt="{{ call.teacher.get_full_name|default:call.teacher.email }}">
+                                {% else %}
+                                <span>{{ call.teacher.get_full_name|default:call.teacher.email|first|upper }}</span>
+                                {% endif %}
+                            </div>
+                            <div>{{ call.teacher.get_full_name|default:call.teacher.email }}</div>
+                        </div>
+                        <div style="margin-bottom:10px;">{{ call.message|default:"بدون رسالة" }}</div>
+                        <div class="call-live-note" data-call-message>جارٍ متابعة حالة الاتصال مع الأستاذ بشكل حي.</div>
+                        {% if call.end_reason %}
+                        <div style="margin-bottom:10px; color:#fda4af;">سبب الإنهاء: {{ call.end_reason }}</div>
+                        {% endif %}
+                        {% if call.status == 'pending' or call.status == 'active' %}
+                        <a href="{% url 'notifications:live_call_room' call.call_id %}" class="btn-dash btn-outline-dash">فتح الغرفة</a>
+                        {% else %}
+                        <form method="post" action="{% url 'notifications:archive_live_call' call.call_id %}" data-archive-call-form>
+                            {% csrf_token %}
+                            <button type="submit" class="btn-dash btn-outline-dash" style="color:#fecaca; border-color:rgba(248,113,113,.24);">
+                                <i class="fas fa-trash"></i> حذف السجل
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                    {% empty %}
+                    <div style="color: var(--dash-text-muted);">لا توجد طلبات اتصال سابقة.</div>
+                    {% endfor %}
+                </div>
+            </section>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const outgoingCards = Array.from(document.querySelectorAll('[data-outgoing-call]'));
+    const incomingForms = Array.from(document.querySelectorAll('[data-call-action-form]'));
+    const archiveForms = Array.from(document.querySelectorAll('[data-archive-call-form]'));
+
+    async function submitCallForm(form, onSuccess) {
+        const response = await fetch(form.action, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            body: new FormData(form)
+        });
+        const payload = await response.json();
+        if (!response.ok || payload.success === false) {
+            throw new Error(payload.error || payload.message || 'تعذر تنفيذ العملية.');
+        }
+        onSuccess(payload);
+    }
+
+    incomingForms.forEach(function(form) {
+        form.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const card = form.closest('[data-incoming-call-card]');
+            try {
+                await submitCallForm(form, function(payload) {
+                    if (form.dataset.callAction === 'accept' && payload.redirect_url) {
+                        window.location.href = payload.redirect_url;
+                        return;
+                    }
+                    if (card) {
+                        card.remove();
+                    }
+                    if (window.eduverseToast) {
+                        window.eduverseToast(payload.message || 'تم تحديث حالة الاتصال.', 'success');
+                    }
+                });
+            } catch (error) {
+                if (window.eduverseToast) {
+                    window.eduverseToast(error.message || 'تعذر تنفيذ العملية.', 'error');
+                }
+            }
+        });
+    });
+
+    archiveForms.forEach(function(form) {
+        form.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const card = form.closest('[data-outgoing-call]');
+            try {
+                await submitCallForm(form, function(payload) {
+                    if (card) {
+                        card.remove();
+                    }
+                    if (window.eduverseToast) {
+                        window.eduverseToast(payload.message || 'تم حذف سجل الاتصال.', 'success');
+                    }
+                });
+            } catch (error) {
+                if (window.eduverseToast) {
+                    window.eduverseToast(error.message || 'تعذر حذف سجل الاتصال.', 'error');
+                }
+            }
+        });
+    });
+
+    if (!outgoingCards.length) return;
+
+    let redirected = false;
+
+    async function pollOutgoingCalls() {
+        if (redirected) return;
+        for (const card of outgoingCards) {
+            const callId = card.dataset.callId;
+            const roomUrl = card.dataset.roomUrl;
+            const statusUrl = card.dataset.statusUrl;
+            const statusNode = card.querySelector('[data-call-status]');
+            const messageNode = card.querySelector('[data-call-message]');
+            try {
+                const response = await fetch(statusUrl, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                if (!response.ok) continue;
+                const data = await response.json();
+                if (statusNode) {
+                    statusNode.textContent = data.status_label || data.status;
+                }
+                if (messageNode && data.state_message) {
+                    messageNode.textContent = data.state_message;
+                }
+                if (data.status === 'active' && data.participant_status === 'accepted') {
+                    redirected = true;
+                    window.location.href = roomUrl;
+                    return;
+                }
+            } catch (error) {
+                console.warn('outgoing call polling failed', error);
+            }
+        }
+    }
+
+    pollOutgoingCalls();
+    setInterval(pollOutgoingCalls, 3500);
+});
+</script>
+{% endblock %}

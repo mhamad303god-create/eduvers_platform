@@ -1,0 +1,619 @@
+{% extends 'layouts/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Advanced Search - Find Your Perfect Course{% endblock %}
+
+{% block extra_css %}
+<style>
+.search-container {
+    max-width: 1400px;
+    margin: 40px auto;
+    padding: 0 20px;
+}
+
+.search-header {
+    background: var(--primary-gradient);
+    border-radius: var(--radius-lg);
+    padding: 50px 40px;
+    color: white;
+    margin-bottom: 40px;
+}
+
+.search-header h1 {
+    font-size: 42px;
+    font-weight: 800;
+    margin-bottom: 15px;
+}
+
+.search-box-wrapper {
+    background: white;
+    border-radius: var(--radius-lg);
+    padding: 8px;
+    display: flex;
+    gap: 10px;
+    box-shadow: var(--shadow-premium);
+    margin-top: 30px;
+}
+
+.search-input {
+    flex: 1;
+    border: none;
+    padding: 16px 20px;
+    font-size: 16px;
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+}
+
+.search-input:focus {
+    outline: none;
+}
+
+.search-btn {
+    padding: 16px 40px;
+    background: var(--primary-gradient);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.3s ease;
+}
+
+.search-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(26, 115, 232, 0.4);
+}
+
+.search-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 30px;
+}
+
+.filters-sidebar {
+    background: var(--card-color);
+    border-radius: var(--radius-lg);
+    padding: 25px;
+    box-shadow: var(--shadow-lg);
+    height: fit-content;
+    position: sticky;
+    top: 100px;
+}
+
+.filter-section {
+    margin-bottom: 30px;
+    padding-bottom: 25px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.filter-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.filter-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.filter-title i {
+    color: var(--primary-color);
+}
+
+.filter-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.filter-option:hover {
+    padding-left: 5px;
+}
+
+.filter-option input[type="checkbox"],
+.filter-option input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.filter-option label {
+    flex: 1;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text-secondary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.filter-count {
+    background: var(--bg-color);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.price-range {
+    margin-top: 15px;
+}
+
+.price-inputs {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.price-input {
+    flex: 1;
+    padding: 10px;
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: 14px;
+}
+
+.results-section {
+    background: var(--card-color);
+    border-radius: var(--radius-lg);
+    padding: 30px;
+    box-shadow: var(--shadow-lg);
+}
+
+.results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.results-count {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.sort-options {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sort-select {
+    padding: 10px 15px;
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    cursor: pointer;
+    background: var(--bg-color);
+    color: var(--text-primary);
+}
+
+.courses-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 25px;
+    margin-top: 25px;
+}
+
+.course-card {
+    background: var(--bg-color);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: 2px solid transparent;
+}
+
+.course-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-premium);
+    border-color: var(--primary-color);
+}
+
+.course-thumbnail {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    background: var(--primary-gradient);
+}
+
+.course-body {
+    padding: 20px;
+}
+
+.course-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+}
+
+.badge-beginner {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.badge-intermediate {
+    background: #fff3e0;
+    color: #f57c00;
+}
+
+.badge-advanced {
+    background: #fce4ec;
+    color: #c2185b;
+}
+
+.course-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 10px;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.course-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin: 15px 0;
+}
+
+.course-meta span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.course-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 15px;
+    border-top: 1px solid var(--border-color);
+}
+
+.course-price {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--primary-color);
+}
+
+.course-currency {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.enroll-btn {
+    padding: 10px 20px;
+    background: var(--primary-gradient);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.enroll-btn:hover {
+    transform: scale(1.05);
+}
+
+.loading-spinner {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid var(--border-color);
+    border-top-color: var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.no-results {
+    text-align: center;
+    padding: 80px 20px;
+}
+
+.no-results-icon {
+    font-size: 80px;
+    color: var(--text-secondary);
+    opacity: 0.3;
+    margin-bottom: 20px;
+}
+
+@media (max-width: 968px) {
+    .search-layout {
+        grid-template-columns: 1fr;
+    }
+    
+    .filters-sidebar {
+        position: static;
+    }
+    
+    .courses-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="search-container">
+    <div class="search-header">
+        <h1>🔍 Find Your Perfect Course</h1>
+        <p>Explore thousands of courses from expert instructors</p>
+        
+        <form id="search-form" class="search-box-wrapper">
+            <input type="text" name="q" id="search-query" class="search-input" 
+                   placeholder="What do you want to learn today?" 
+                   value="{{ query }}">
+            <button type="submit" class="search-btn">
+                <i class="fas fa-search"></i>
+                Search
+            </button>
+        </form>
+    </div>
+
+    <div class="search-layout">
+        <!-- Filters Sidebar -->
+        <aside class="filters-sidebar">
+            <h3 style="font-size: 20px; font-weight: 800; margin-bottom: 25px;">
+                <i class="fas fa-sliders-h"></i> Filters
+            </h3>
+
+            <!-- Subject Filter -->
+            <div class="filter-section">
+                <div class="filter-title">
+                    <i class="fas fa-book"></i>
+                    Subject
+                </div>
+                {% for subject in facets.subjects %}
+                <div class="filter-option">
+                    <input type="checkbox" name="subject" value="{{ subject.name }}" 
+                           id="subject-{{ forloop.counter }}">
+                    <label for="subject-{{ forloop.counter }}">
+                        <span>{{ subject.name }}</span>
+                        <span class="filter-count">{{ subject.count }}</span>
+                    </label>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Level Filter -->
+            <div class="filter-section">
+                <div class="filter-title">
+                    <i class="fas fa-signal"></i>
+                    Level
+                </div>
+                <div class="filter-option">
+                    <input type="checkbox" name="level" value="beginner" id="level-beginner">
+                    <label for="level-beginner">
+                        <span>Beginner</span>
+                        <span class="filter-count">{{ facets.levels.beginner }}</span>
+                    </label>
+                </div>
+                <div class="filter-option">
+                    <input type="checkbox" name="level" value="intermediate" id="level-intermediate">
+                    <label for="level-intermediate">
+                        <span>Intermediate</span>
+                        <span class="filter-count">{{ facets.levels.intermediate }}</span>
+                    </label>
+                </div>
+                <div class="filter-option">
+                    <input type="checkbox" name="level" value="advanced" id="level-advanced">
+                    <label for="level-advanced">
+                        <span>Advanced</span>
+                        <span class="filter-count">{{ facets.levels.advanced }}</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Price Filter -->
+            <div class="filter-section">
+                <div class="filter-title">
+                    <i class="fas fa-tag"></i>
+                    Price Range
+                </div>
+                <div class="price-range">
+                    <div class="price-inputs">
+                        <input type="number" name="price_min" placeholder="Min" 
+                               class="price-input" value="{{ price_min }}">
+                        <input type="number" name="price_max" placeholder="Max" 
+                               class="price-input" value="{{ price_max }}">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Type Filter -->
+            <div class="filter-section">
+                <div class="filter-title">
+                    <i class="fas fa-play-circle"></i>
+                    Type
+                </div>
+                <div class="filter-option">
+                    <input type="checkbox" name="type" value="recorded" id="type-recorded">
+                    <label for="type-recorded">
+                        <span>Recorded</span>
+                    </label>
+                </div>
+                <div class="filter-option">
+                    <input type="checkbox" name="type" value="live" id="type-live">
+                    <label for="type-live">
+                        <span>Live</span>
+                    </label>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Results Section -->
+        <section class="results-section">
+            <div class="results-header">
+                <div class="results-count">
+                    {{ courses.count }} courses found
+                </div>
+                <div class="sort-options">
+                    <label>Sort by:</label>
+                    <select name="sort_by" id="sort-select" class="sort-select">
+                        <option value="-created_at" {% if sort_by == '-created_at' %}selected{% endif %}>Newest</option>
+                        <option value="price" {% if sort_by == 'price' %}selected{% endif %}>Price: Low to High</option>
+                        <option value="-price" {% if sort_by == '-price' %}selected{% endif %}>Price: High to Low</option>
+                        <option value="-rating" {% if sort_by == '-rating' %}selected{% endif %}>Highest Rated</option>
+                        <option value="-popularity" {% if sort_by == '-popularity' %}selected{% endif %}>Most Popular</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="courses-grid" class="courses-grid">
+                {% for course in courses %}
+                <div class="course-card" onclick="window.location.href='{% url 'courses:course_detail' course.course_id %}'">
+                    <img src="{{ course.thumbnail.url|default:'/static/images/course-placeholder.jpg' }}" 
+                         alt="{{ course.title }}" class="course-thumbnail">
+                    
+                    <div class="course-body">
+                        <span class="course-badge badge-{{ course.level }}">
+                            {{ course.get_level_display }}
+                        </span>
+                        
+                        <h3 class="course-title">{{ course.title }}</h3>
+                        
+                        <div class="course-meta">
+                            <span>
+                                <i class="fas fa-user"></i>
+                                {{ course.teacher.user.get_full_name }}
+                            </span>
+                            <span>
+                                <i class="fas fa-users"></i>
+                                {{ course.enrollment_count }} students
+                            </span>
+                            <span>
+                                <i class="fas fa-star" style="color: #ffc107;"></i>
+                                {{ course.rating|floatformat:1 }}
+                            </span>
+                        </div>
+                        
+                        <div class="course-footer">
+                            <div class="course-price">
+                                {{ course.price }}
+                                <span class="course-currency">{{ course.currency }}</span>
+                            </div>
+                            <button class="enroll-btn" onclick="event.stopPropagation()">
+                                Enroll Now
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="no-results">
+                    <div class="no-results-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <h3 style="font-size: 24px; margin-bottom: 10px;">No courses found</h3>
+                    <p style="color: var(--text-secondary);">Try adjusting your filters or search query</p>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Pagination -->
+            {% if courses.has_other_pages %}
+            <div style="display: flex; justify-content: center; margin-top: 40px; gap: 10px;">
+                {% if courses.has_previous %}
+                <a href="?page={{ courses.previous_page_number }}&{{ request.GET.urlencode }}" 
+                   style="padding: 10px 20px; background: var(--primary-color); color: white; 
+                          border-radius: var(--radius-md); text-decoration: none;">
+                    Previous
+                </a>
+                {% endif %}
+                
+                <span style="padding: 10px 20px;">
+                    Page {{ courses.number }} of {{ courses.paginator.num_pages }}
+                </span>
+                
+                {% if courses.has_next %}
+                <a href="?page={{ courses.next_page_number }}&{{ request.GET.urlencode }}" 
+                   style="padding: 10px 20px; background: var(--primary-color); color: white; 
+                          border-radius: var(--radius-md); text-decoration: none;">
+                    Next
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </section>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Filter change handler
+document.querySelectorAll('input[name="subject"], input[name="level"], input[name="type"]').forEach(input => {
+    input.addEventListener('change', applyFilters);
+});
+
+document.querySelectorAll('input[name="price_min"], input[name="price_max"]').forEach(input => {
+    input.addEventListener('change', applyFilters);
+});
+
+document.getElementById('sort-select').addEventListener('change', applyFilters);
+
+function applyFilters() {
+    const form = document.getElementById('search-form');
+    const formData = new FormData(form);
+    
+    // Add filters
+    document.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => {
+        formData.append(cb.name, cb.value);
+    });
+    
+    // Add price range
+    const priceMin = document.querySelector('input[name="price_min"]').value;
+    const priceMax = document.querySelector('input[name="price_max"]').value;
+    if (priceMin) formData.append('price_min', priceMin);
+    if (priceMax) formData.append('price_max', priceMax);
+    
+    // Add sort
+    formData.append('sort_by', document.getElementById('sort-select').value);
+    
+    // Build query string
+    const params = new URLSearchParams(formData);
+    window.location.href = '?' + params.toString();
+}
+
+// Search form submission
+document.getElementById('search-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    applyFilters();
+});
+</script>
+{% endblock %}

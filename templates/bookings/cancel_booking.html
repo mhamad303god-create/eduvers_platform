@@ -1,0 +1,43 @@
+{% extends 'layouts/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}إلغاء الحجز - EduVerse{% endblock %}
+
+{% block extra_head %}
+<style>
+.cancel-shell { border:1px solid rgba(244,63,94,.18); border-radius:28px; overflow:hidden; background:linear-gradient(180deg, rgba(15,23,42,.96), rgba(17,24,39,.98)); box-shadow:0 24px 48px rgba(2,6,23,.24); }
+.cancel-head { padding:24px 28px; background:linear-gradient(135deg, rgba(244,63,94,.16), rgba(190,24,93,.12)); border-bottom:1px solid rgba(255,255,255,.06); }
+.cancel-body { padding:24px 28px 28px; display:grid; gap:18px; }
+.cancel-note { padding:16px 18px; border-radius:18px; background:rgba(127,29,29,.16); border:1px solid rgba(244,63,94,.18); color:#fecdd3; line-height:1.9; }
+.cancel-textarea { width:100%; min-height:150px; resize:vertical; background:rgba(15,23,42,.82); color:#fff; border:1px solid rgba(244,63,94,.24); border-radius:18px; padding:16px; }
+.cancel-textarea:focus { outline:none; box-shadow:0 0 0 4px rgba(244,63,94,.12); border-color:rgba(244,63,94,.44); }
+.action-row { display:flex; gap:12px; flex-wrap:wrap; }
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<section class="dashboard-section">
+    <div class="section-header">
+        <div class="section-title"><i class="fas fa-ban"></i> إلغاء الحجز</div>
+        <a href="javascript:history.back()" class="btn-dash btn-outline-dash"><i class="fas fa-arrow-right"></i> العودة</a>
+    </div>
+    <div class="cancel-shell">
+        <div class="cancel-head">
+            <h3 style="margin:0 0 8px;">{{ booking.course.title|default:"جلسة خاصة" }}</h3>
+            <p style="margin:0; color:#fecdd3;">قبل الإلغاء، اكتب السبب حتى يبقى واضحاً للطرف الآخر داخل تفاصيل الحجز.</p>
+        </div>
+        <div class="cancel-body">
+            <div class="cancel-note">هذا الإجراء سيحول حالة الحجز إلى ملغي. يفضل كتابة سبب واضح ومباشر حتى يبقى سجل الجلسة مفهوماً للطرفين.</div>
+            <form method="post" style="display:grid; gap:16px;">
+                {% csrf_token %}
+                <label style="font-weight:800;">سبب الإلغاء</label>
+                <textarea name="cancellation_reason" id="cancellation_reason" class="cancel-textarea" rows="5" required placeholder="مثال: تعارض موعد / ظرف طارئ / تأجيل بالاتفاق"></textarea>
+                <div class="action-row">
+                    <button type="submit" class="btn-dash btn-primary-dash">تأكيد الإلغاء</button>
+                    <a href="javascript:history.back()" class="btn-dash btn-outline-dash">تراجع</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends 'layouts/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}تصفح المعلمين - EduVerse{% endblock %}
+
+{% block dashboard_content %}
+<div class="dashboard-section">
+    <div class="section-header">
+        <div class="section-title">
+            <i class="fas fa-chalkboard-teacher"></i>
+            تصفح المعلمين المتاحين
+        </div>
+    </div>
+
+    {% if teachers %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+        {% for teacher in teachers %}
+        <div style="background: rgba(255,255,255,0.03); border-radius: 12px; padding: 20px; border: 1px solid var(--dash-border); transition: 0.3s; position: relative; overflow: hidden;">
+            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: linear-gradient(90deg, var(--dash-primary), var(--dash-secondary));"></div>
+            
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
+                <div style="width: 60px; height: 60px; border-radius: 50%; background: var(--dash-card); border: 2px solid var(--dash-primary); display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                    {% if teacher.user.avatar %}
+                        <img src="{{ teacher.user.avatar.url }}" alt="{{ teacher.user.get_full_name }}" style="width: 100%; height: 100%; object-fit: cover;">
+                    {% else %}
+                        <span style="font-size: 1.5rem; font-weight: bold; color: var(--dash-primary);">{{ teacher.user.first_name|first|default:"T" }}</span>
+                    {% endif %}
+                </div>
+                <div>
+                    <h3 style="font-size: 1.1rem; margin-bottom: 5px;">{{ teacher.user.get_full_name|default:teacher.user.username }}</h3>
+                    <div style="color: var(--dash-text-muted); font-size: 0.9rem;">
+                        <i class="fas fa-star" style="color: gold;"></i> 4.8 (120 تقييم)
+                    </div>
+                </div>
+            </div>
+
+            <p style="color: var(--dash-text-muted); font-size: 0.9rem; line-height: 1.6; margin-bottom: 20px; min-height: 60px;">
+                {{ teacher.bio|truncatechars:100|default:"رسالة ترحيبية من المعلم..." }}
+            </p>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <a href="{% url 'bookings:teacher_availability_view' teacher.pk %}" class="btn-dash btn-outline-dash" style="text-align: center; justify-content: center;">
+                    <i class="fas fa-calendar-check"></i> المواعيد
+                </a>
+                <a href="{% url 'bookings:student_book_session' %}?teacher_id={{ teacher.pk }}" class="btn-dash btn-primary-dash" style="text-align: center; justify-content: center;">
+                    <i class="fas fa-calendar-plus"></i> حجز جلسة
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 60px; color: var(--dash-text-muted);">
+        <i class="fas fa-users-slash" style="font-size: 4rem; margin-bottom: 20px; opacity: 0.5;"></i>
+        <h3>لا يوجد معلمين متاحين حالياً</h3>
+        <p>يرجى المحاولة في وقت لاحق</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

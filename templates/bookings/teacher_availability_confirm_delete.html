@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}تأكيد حذف التوفر - EduVerse{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1>تأكيد حذف التوفر</h1>
+        <a href="{% url 'bookings:teacher_availability_list' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> العودة
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h3>هل أنت متأكد من حذف هذا التوفر؟</h3>
+        </div>
+        <div class="card-body">
+            <p><strong>اليوم:</strong> {{ availability.get_day_of_week_display }}</p>
+            <p><strong>وقت البداية:</strong> {{ availability.start_time }}</p>
+            <p><strong>وقت النهاية:</strong> {{ availability.end_time }}</p>
+            <p><strong>المنطقة الزمنية:</strong> {{ availability.timezone }}</p>
+
+            <form method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">نعم، احذف</button>
+                <a href="{% url 'bookings:teacher_availability_list' %}" class="btn btn-secondary">إلغاء</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

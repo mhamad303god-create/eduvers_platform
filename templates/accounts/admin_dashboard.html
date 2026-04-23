@@ -1,0 +1,165 @@
+{% extends 'layouts/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}لوحة تحكم الإدارة - EduVerse{% endblock %}
+
+{% block dashboard_content %}
+    <!-- Admin Stats -->
+    <div class="stats-grid">
+        <a class="stat-card" href="{% url 'accounts:admin_users_list' 'student' %}" style="text-decoration:none;">
+            <div class="stat-icon primary">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-info">
+                <div class="value">{{ total_students|default:"0" }}</div>
+                <div class="label">إجمالي الطلاب</div>
+            </div>
+        </a>
+        <a class="stat-card" href="{% url 'accounts:admin_users_list' 'teacher' %}" style="text-decoration:none;">
+            <div class="stat-icon secondary">
+                <i class="fas fa-chalkboard-teacher"></i>
+            </div>
+            <div class="stat-info">
+                <div class="value">{{ total_teachers|default:"0" }}</div>
+                <div class="label">إجمالي المعلمين</div>
+            </div>
+        </a>
+        <div class="stat-card">
+            <div class="stat-icon success">
+                <i class="fas fa-check-double"></i>
+            </div>
+            <div class="stat-info">
+                <div class="value">{{ total_bookings|default:"0" }}</div>
+                <div class="label">الجلسات المنفذة</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon accent">
+                <i class="fas fa-coins"></i>
+            </div>
+            <div class="stat-info">
+                <div class="value">45,000 ر.س</div>
+                <div class="label">عائدات المنصة</div>
+            </div>
+        </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+        <!-- Recent Registrations -->
+        <section class="dashboard-section">
+            <div class="section-header">
+                <div class="section-title">
+                    <i class="fas fa-user-plus"></i>
+                    المستخدمين الجدد
+                </div>
+            </div>
+            <table class="dash-table">
+                <thead>
+                    <tr>
+                        <th>الاسم</th>
+                        <th>الدور</th>
+                        <th>تاريخ التسجيل</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in recent_users %}
+                    <tr>
+                        <td>{{ item.user.get_full_name|default:item.user.username }}</td>
+                        <td>
+                            {% if item.role == 'teacher' %}
+                                <span style="color: var(--dash-secondary);">معلم</span>
+                            {% elif item.role == 'student' %}
+                                <span style="color: var(--dash-primary);">طالب</span>
+                            {% elif item.role == 'admin' %}
+                                <span style="color: var(--dash-accent);">أدمن</span>
+                            {% else %}
+                                <span style="color: var(--dash-text-muted);">غير محدد</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ item.user.date_joined|date:"d M" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="3" style="text-align: center;">لا يوجد تسجيلات حديثة</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+
+        <!-- System Alerts / Logs -->
+        <section class="dashboard-section">
+            <div class="section-header">
+                <div class="section-title">
+                    <i class="fas fa-bell"></i>
+                    تنبيهات النظام
+                </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+                {% for notification in recent_notifications %}
+                <div style="background: {% if notification.is_read %}rgba(148, 163, 184, 0.08){% else %}rgba(99, 102, 241, 0.12){% endif %}; padding: 15px; border-radius: 10px; border-right: 3px solid {% if notification.is_read %}var(--dash-border){% else %}var(--dash-primary){% endif %};">
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom: 8px;">
+                        <div style="font-weight: bold; color: var(--dash-text);">{{ notification.title }}</div>
+                        <span style="font-size: 0.8rem; color: var(--dash-text-muted);">{{ notification.created_at|date:"d/m H:i" }}</span>
+                    </div>
+                    <div style="font-size: 0.92rem; color: var(--dash-text-muted);">{{ notification.content }}</div>
+                </div>
+                {% empty %}
+                <div style="color: var(--dash-text-muted);">لا توجد إشعارات حديثة.</div>
+                {% endfor %}
+                <a href="{% url 'notifications:notification_list' %}" class="btn btn-outline" style="width: fit-content;">عرض كل الإشعارات</a>
+            </div>
+        </section>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 30px;">
+        <section class="dashboard-section">
+            <div class="section-header">
+                <div class="section-title">
+                    <i class="fas fa-paper-plane"></i>
+                    رسائل التواصل الجديدة
+                </div>
+                <div style="color: var(--dash-primary); font-weight: 700;">{{ new_contact_requests_count|default:"0" }} جديد</div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+                {% for contact in recent_contact_requests %}
+                <div style="background: rgba(15, 23, 42, 0.04); padding: 16px; border-radius: 12px; border: 1px solid var(--dash-border);">
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom: 8px;">
+                        <div style="font-weight: 700; color: var(--dash-text);">{{ contact.full_name }}</div>
+                        <span style="font-size: 0.8rem; color: var(--dash-text-muted);">{{ contact.created_at|date:"d/m H:i" }}</span>
+                    </div>
+                    <div style="font-size: 0.9rem; color: var(--dash-primary); margin-bottom: 6px;">{{ contact.subject }}</div>
+                    <div style="font-size: 0.9rem; color: var(--dash-text-muted); margin-bottom: 6px;">{{ contact.email }}</div>
+                    <div style="font-size: 0.92rem; color: var(--dash-text);">{{ contact.message|truncatechars:120 }}</div>
+                </div>
+                {% empty %}
+                <div style="color: var(--dash-text-muted);">لا توجد رسائل تواصل حالياً.</div>
+                {% endfor %}
+                <a href="{% url 'admin:notifications_contactrequest_changelist' %}" class="btn btn-outline" style="width: fit-content;" target="_blank">إدارة رسائل التواصل</a>
+            </div>
+        </section>
+
+        <section class="dashboard-section">
+            <div class="section-header">
+                <div class="section-title">
+                    <i class="fas fa-envelope"></i>
+                    الرسائل الواردة لحساب المدير
+                </div>
+                <div style="color: var(--dash-secondary); font-weight: 700;">{{ unread_messages_count|default:"0" }} غير مقروء</div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+                {% for message in recent_admin_messages %}
+                <div style="background: {% if message.is_read %}rgba(148, 163, 184, 0.08){% else %}rgba(16, 185, 129, 0.12){% endif %}; padding: 16px; border-radius: 12px; border-right: 3px solid {% if message.is_read %}var(--dash-border){% else %}var(--dash-secondary){% endif %};">
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom: 8px;">
+                        <div style="font-weight: 700; color: var(--dash-text);">{{ message.sender.email }}</div>
+                        <span style="font-size: 0.8rem; color: var(--dash-text-muted);">{{ message.created_at|date:"d/m H:i" }}</span>
+                    </div>
+                    <div style="font-size: 0.9rem; color: var(--dash-secondary); margin-bottom: 6px;">{{ message.subject|default:"بدون موضوع" }}</div>
+                    <div style="font-size: 0.92rem; color: var(--dash-text-muted);">{{ message.content|truncatechars:120 }}</div>
+                </div>
+                {% empty %}
+                <div style="color: var(--dash-text-muted);">لا توجد رسائل واردة حالياً.</div>
+                {% endfor %}
+                <a href="{% url 'notifications:message_list' %}" class="btn btn-outline" style="width: fit-content;">عرض كل الرسائل</a>
+            </div>
+        </section>
+    </div>
+{% endblock %}
